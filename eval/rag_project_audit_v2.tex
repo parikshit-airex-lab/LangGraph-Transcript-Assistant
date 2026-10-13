@@ -1,0 +1,552 @@
+% =====================================================================
+%  RAG project: audit, head-to-head benchmark, and resume guidance
+%  Version 2 -- supersedes rag_project_audit.tex
+%  Compile:  pdflatex rag_project_audit_v2.tex   (run twice for the ToC)
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=2.1cm]{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage[hidelinks]{hyperref}
+\usepackage{titlesec}
+\usepackage{ragged2e}
+
+\definecolor{supported}{RGB}{0,120,60}
+\definecolor{partial}{RGB}{190,120,0}
+\definecolor{unsupported}{RGB}{180,30,30}
+\definecolor{codebg}{RGB}{245,245,245}
+\definecolor{boxbg}{RGB}{248,248,242}
+
+\newcommand{\SUP}{\textcolor{supported}{\textbf{SUPPORTED}}}
+\newcommand{\PART}{\textcolor{partial}{\textbf{PARTIAL}}}
+\newcommand{\NOT}{\textcolor{unsupported}{\textbf{NOT SUPPORTED}}}
+
+% narrow, ragged-right column type for evidence cells so long file:line
+% strings wrap instead of running into the margin
+\newcolumntype{R}[1]{>{\RaggedRight\arraybackslash}p{#1}}
+
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{codebg},
+  breaklines=true,
+  frame=single,
+  framesep=4pt,
+  rulecolor=\color{gray!40},
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  xleftmargin=0pt,
+}
+\lstset{style=code}
+
+\titleformat{\section}{\large\bfseries}{\thesection}{0.7em}{}
+\setlist{itemsep=2pt,parsep=0pt,topsep=3pt}
+
+\title{\textbf{RAG Project: Audit, Head-to-Head Benchmark,\\ and Resume Guidance}\\[3pt]
+\large From-Scratch NumPy Pipeline vs.\ LangChain/LangGraph Transcript Assistant}
+\author{Parikshit M. \quad (M.Tech Research, CDS, IISc Bengaluru)}
+\date{24 September 2026 \quad$\cdot$\quad Version 2}
+
+\begin{document}
+\maketitle
+
+% =====================================================================
+\section*{Summary}
+\addcontentsline{toc}{section}{Summary}
+% =====================================================================
+
+\noindent
+\fcolorbox{gray!40}{boxbg}{%
+\begin{minipage}{0.97\textwidth}
+\vspace{4pt}
+\textbf{In one paragraph.} This project is two implementations of the same idea,
+and the interesting result is that they were finally measured against each other.
+The from-scratch pipeline (\texttt{rag\_annotated.py}: NumPy, MiniLM-384d,
+800/150-character chunks, dot-product cosine search) and the framework pipeline
+(LangChain + LangGraph + Chroma + Groq \texttt{gpt-oss-120b}, 1000/200-character
+chunks) were run over the same 52{,}826-character transcript against the same 35
+span-labelled questions. At their shipped defaults the from-scratch version
+retrieves slightly \emph{better} --- hit@4 of 0.857 versus 0.829 --- and indexes
+faster. A chunk-size ablation then shows that this gap is not about NumPy versus
+Chroma at all: it is chunk size. Holding chunking fixed at 800/150, the framework
+pipeline rises to hit@4 0.886 with a perfect hit@10 of 1.000, its best
+configuration measured, and better than the 1000/200 setting the application
+currently ships. Retrieval costs 8--10\,ms in both systems, so the vector store is
+not the latency story --- the LLM call is. The honest headline for a resume is
+therefore not ``framework good'' or ``from-scratch good'' but: \emph{two
+implementations, one gold set, and a measured finding that chunk size dominates
+both}. Two words from the original resume text remain unusable: the application
+is \textbf{served locally, not deployed}, and its two-node graph makes no
+decisions, so it is \textbf{not an agent}.
+\vspace{4pt}
+\end{minipage}}
+
+\tableofcontents
+\vspace{1em}
+
+% =====================================================================
+\section{What changed since version 1}
+% =====================================================================
+
+Version 1 of this audit could not verify the from-scratch claim: the code was not
+in the repository, so bullet 1 was marked \emph{not verifiable} and bullet 3 --- the
+comparison --- had no numbers behind it at all.
+
+\texttt{rag\_annotated.py} is now in the repository, at
+\texttt{DL/Lang\_Chain/Lang\_Chain/rag\_annotated.py}. That closes both gaps:
+
+\begin{itemize}
+  \item Bullet 1 is now auditable, and the wording needs one correction
+        (Section~\ref{sec:bullet1}): the pipeline is written around a
+        \emph{pretrained} sentence-transformers encoder, not a from-scratch
+        embedding model.
+  \item Bullet 3 is now a measurement rather than a claim
+        (Section~\ref{sec:bench}), including a chunk-size ablation that
+        identifies \emph{why} one pipeline beats the other.
+\end{itemize}
+
+% =====================================================================
+\section{The two implementations, side by side}
+% =====================================================================
+
+\begin{longtable}{@{}R{3.1cm}R{5.9cm}R{6.1cm}@{}}
+\toprule
+& \textbf{From-scratch (\texttt{rag\_annotated.py})} &
+  \textbf{Framework (\texttt{Transcript\_RAG\_With\_DB/})} \\
+\midrule
+\endhead
+Embedding model &
+\texttt{all-MiniLM-L6-v2}, 384-dim, \texttt{normalize\_embeddings=True}
+(line 375) &
+\texttt{all-MiniLM-L6-v2}, 384-dim, normalised by the model's own
+\texttt{Normalize} module (backend line 22) \\
+\addlinespace
+Generator LLM &
+\texttt{claude-sonnet-4-6} via the \texttt{anthropic} SDK (line 562) &
+\texttt{openai/gpt-oss-120b} via \textbf{Groq} (backend line 21) \\
+\addlinespace
+Chunking &
+Character window, 800 size / 150 overlap, snapped backwards to the last space in
+the second half of the window (lines 181--317) &
+\texttt{RecursiveCharacterTextSplitter}, 1000 / 200; separate no-overlap cue
+grouper for \texttt{.srt}/\texttt{.vtt} (loader lines 8, 29--55) \\
+\addlinespace
+Index &
+One \texttt{(N, 384)} NumPy array plus an aligned list of dicts (lines 404--414) &
+Chroma (HNSW), persisted per transcript to
+\texttt{storage/chroma\_store} (backend lines 184--200) \\
+\addlinespace
+Search &
+\texttt{matrix @ q} then \texttt{argsort}, exact, $k=4$ (lines 450--464) &
+\texttt{as\_retriever(search\_kwargs=\{"k": 4\})}, approximate
+(backend line 231) \\
+\addlinespace
+Input formats &
+\texttt{.txt} and \texttt{.md} only (line 79) &
+\texttt{.txt}, \texttt{.pdf}, \texttt{.srt}, \texttt{.vtt} (frontend lines 96--99) \\
+\addlinespace
+Citations &
+\textbf{Yes.} Prompt asks for \texttt{[2]}-style chunk citations and the CLI
+prints retrieval scores before every answer (lines 517--519, 603--604) &
+\textbf{No.} Timestamps go into the prompt, but the UI renders answer text only
+(frontend lines 183--193) \\
+\addlinespace
+Conversation memory &
+None. Single-turn; each question is independent (lines 588--606) &
+\texttt{SqliteSaver} checkpointer, resumable named threads
+(backend lines 31--32, 254) \\
+\addlinespace
+Persistence &
+None. Re-embeds the whole corpus at every start (line 414) &
+Three tiers: Chroma on disk, checkpoint DB, \texttt{transcript\_meta} table \\
+\addlinespace
+Interface &
+Terminal REPL (lines 588--606) &
+Streamlit chat UI with token streaming \\
+\bottomrule
+\end{longtable}
+
+\noindent
+\textbf{Worth noticing, because it inverts the usual story:} the from-scratch
+version is the one that cites its sources and shows retrieval scores. The
+framework version has more capability --- persistence, multi-turn memory, PDF and
+subtitle parsing, streaming --- but strictly \emph{worse} answer provenance. That
+is a genuinely good thing to say out loud in an interview, and it is the kind of
+observation that only comes from having built both.
+
+% =====================================================================
+\section{Head-to-head benchmark}\label{sec:bench}
+% =====================================================================
+
+\subsection{Method}
+
+\begin{itemize}
+  \item \textbf{Corpus.} The AI-infrastructure transcript this application
+        genuinely indexed, recovered from the live Chroma collection and
+        de-overlapped back into 52{,}826 characters of raw text
+        (\texttt{eval/ai\_infra\_transcript.txt}).
+  \item \textbf{Questions.} 35, spanning the whole transcript
+        (\texttt{eval/eval\_questions.json}).
+  \item \textbf{Gold labels.} Each question carries an \texttt{answer\_span}; a
+        chunk is gold if it contains that span. Labels are therefore recomputed
+        for each chunking scheme, which is the only fair way to compare systems
+        that chunk differently. It also handles overlap correctly: a fact
+        straddling a boundary is legitimately present in two chunks.
+  \item \textbf{Fairness.} Both pipelines receive the \emph{same raw document}
+        and chunk it themselves, because chunking is part of what is being
+        compared. The NumPy pipeline is driven through its own
+        \texttt{split()}, \texttt{embed()} and \texttt{retrieve()} functions ---
+        imported, not reimplemented. The encoder is warm in both, and each query
+        is timed three times with the minimum taken.
+\end{itemize}
+
+\subsection{Result at shipped defaults}
+
+\begin{center}\small
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\textbf{Metric} & \textbf{Framework (1000/200)} & \textbf{From-scratch (800/150)} \\
+\midrule
+Chunks produced       & 65 (943 chars avg) & 82 (792 chars avg) \\
+hit@1                 & 0.486 & 0.486 \\
+hit@3                 & 0.743 & \textbf{0.771} \\
+\textbf{hit@4}        & 0.829 & \textbf{0.857} \\
+hit@5                 & 0.829 & \textbf{0.886} \\
+hit@10                & 0.943 & \textbf{0.971} \\
+recall@4              & 0.781 & \textbf{0.814} \\
+MRR                   & 0.633 & \textbf{0.643} \\
+\midrule
+Retrieval latency, mean & 9.6\,ms & \textbf{7.9\,ms} \\
+Retrieval latency, p95  & 10.6\,ms & \textbf{8.6\,ms} \\
+Index build (warm encoder) & 1.25\,s & \textbf{0.94\,s} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+Read literally: the 190-line NumPy script retrieves slightly better and slightly
+faster than the framework pipeline. Stopping there would be a mistake, and an
+interviewer will push on it --- so the next subsection is the important one.
+
+\subsection{Ablation: is it the implementation, or the chunk size?}
+
+The two systems differ in two ways at once, which is a confound. Holding chunk
+size fixed and re-running both isolates it. \textbf{hit@4} across the grid:
+
+\begin{center}\small
+\begin{tabular}{@{}lrrl@{}}
+\toprule
+\textbf{Chunk size / overlap} & \textbf{Framework} & \textbf{From-scratch} & \textbf{Difference} \\
+\midrule
+500 / 100   & 0.800 & 0.714 & framework +0.086 (3 questions) \\
+800 / 150   & \textbf{0.886} & 0.857 & framework +0.029 (1 question) \\
+1000 / 200  & 0.829 & 0.857 & from-scratch +0.028 (1 question) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+And the same grid on MRR: framework 0.642 / \textbf{0.700} / 0.633, from-scratch
+0.567 / 0.643 / 0.639.
+
+\paragraph{What this establishes.}
+\begin{enumerate}
+  \item \textbf{Chunk size dominates.} Within the from-scratch pipeline alone,
+        moving from 500 to 800 characters moves hit@4 by 14 points (5 questions).
+        The largest implementation gap at a fixed size is 3 points (1 question).
+  \item \textbf{The default the application ships is not its best setting.}
+        The framework pipeline at 800/150 scores hit@4 0.886 and hit@10
+        \textbf{1.000} --- every question answerable within ten chunks --- against
+        0.829 and 0.943 at the 1000/200 it currently uses. That is a concrete,
+        free improvement to the shipped app.
+  \item \textbf{The original ``NumPy wins'' reading was an artefact.} It compared
+        800/150 against 1000/200 and attributed a chunking effect to the
+        implementation.
+\end{enumerate}
+
+\paragraph{Honesty about the sample size --- say this before you are asked.}
+There are 35 questions, so one question is worth 2.9 points of hit@4. Differences
+of one or two questions (every implementation gap in the table above) are
+\textbf{within noise} and should not be claimed as real. Only the chunk-size
+effects, which move 3--5 questions, are large enough to lean on. A second honest
+caveat: because gold labels are recomputed per chunking, the average number of
+gold chunks per question varies from 1.11 to 1.31 across configurations, which
+slightly favours the configurations with more gold chunks. Both caveats are worth
+stating in an interview; volunteering them reads as rigour, while being caught
+without them reads as overclaiming.
+
+\subsection{What each side actually buys}
+
+\begin{longtable}{@{}R{4.6cm}R{10.6cm}@{}}
+\toprule
+\textbf{The framework earns} & \textbf{The evidence} \\
+\midrule
+\endhead
+A better splitter &
+Recursive splitting on paragraph and sentence boundaries beats naive
+space-snapping at 500 and 800 characters. \\
+Capability, not quality &
+PDF and subtitle parsing, persistence, checkpointed multi-turn threads, token
+streaming --- none of which the NumPy version has, and none of which this
+benchmark measures. \\
+\midrule
+\textbf{The framework costs} & \\
+\midrule
+Latency & 9.6\,ms versus 7.9\,ms per query; roughly 20\% overhead for a wrapper
+around the same encoder and the same arithmetic. \\
+Nothing on quality at this scale &
+65 vectors is far below where an approximate index matters; exact NumPy search
+returns the same neighbours. \\
+Visibility &
+The retrieval scores that \texttt{rag\_annotated.py} prints on every query --- the
+single best debugging signal in a RAG system --- are not surfaced anywhere in
+the framework app. \\
+\bottomrule
+\end{longtable}
+
+% =====================================================================
+\section{Verdicts on the original three bullets}
+% =====================================================================
+
+\subsection{Bullet 1 --- from-scratch NumPy}\label{sec:bullet1}
+
+\begin{quote}\itshape
+Built a RAG pipeline from scratch in NumPy, implementing document chunking,
+embedding, vector similarity search and context assembly directly, to establish
+the underlying mechanics without framework abstraction.
+\end{quote}
+
+\begin{longtable}{@{}R{6.0cm}R{2.4cm}R{6.6cm}@{}}
+\toprule
+\textbf{Claim} & \textbf{Verdict} & \textbf{Evidence} \\
+\midrule
+\endhead
+Chunking implemented directly & \SUP &
+Hand-written sliding window with overlap and word-boundary snapping, including a
+guard against the degenerate \texttt{overlap >= size} case (lines 181--317). \\
+\addlinespace
+Vector similarity search implemented directly & \SUP &
+\texttt{matrix @ q} plus \texttt{argsort}, with normalisation at embed time so
+cosine reduces to a dot product (lines 375, 450--464). \\
+\addlinespace
+Context assembly implemented directly & \SUP &
+Numbered, source-tagged context blocks joined for the prompt (lines 546--548). \\
+\addlinespace
+``Embedding'' implemented directly & \PART &
+\textbf{This is the one word to fix.} The encoder is pretrained
+\texttt{all-MiniLM-L6-v2} loaded from sentence-transformers (line 354). You wrote
+the pipeline around it; you did not implement an embedding model. \\
+\addlinespace
+``From scratch'' & \PART &
+True of the retrieval machinery, not of the encoder. Your own phrasing --- ``not
+totally from scratch, but the chunking and retrieval are mine in NumPy'' --- is
+the accurate one and should go on the resume in that spirit. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Bullet 2 --- the framework assistant}
+
+Unchanged from version 1: \SUP{} on LangChain, LangGraph, Streamlit, local
+serving, upload, and semantic retrieval; \PART{} on ``grounded'' (prompt-level
+only, no threshold, no citation rendering, no faithfulness test) and on
+``document assistant'' (it is specifically a \emph{transcript} assistant).
+
+\subsection{Bullet 3 --- the comparison}
+
+Now \SUP, for the first time: Section~\ref{sec:bench} supplies retrieval quality,
+latency, indexing cost, an ablation isolating the cause, and a statement of where
+the abstraction helps and where it hides things. Bullet 3 was the weakest line on
+the resume and is now the strongest.
+
+\subsection{The two words that still fail}
+
+\textbf{``Deployed''} --- no Dockerfile, no host config, no public URL, and a
+\texttt{requirement.txt} that omits Streamlit, LangGraph, Chroma, Groq and
+sentence-transformers. The app runs under \texttt{streamlit run} on localhost.
+\textbf{``Agent''} --- two nodes, three unconditional edges, no tool binding, no
+conditional routing; the LLM never influences control flow.
+
+% =====================================================================
+\section{Resume: title and bullets}
+% =====================================================================
+
+\subsection{Project title}
+
+Drop ``Deployed Document Assistant''. In order of preference:
+
+\begin{enumerate}
+  \item \textbf{Retrieval-Augmented Generation: From-Scratch and Framework
+        Implementations, Benchmarked} \\
+        Leads with the comparison, which is what makes the project unusual.
+  \item \textbf{Retrieval-Augmented Generation: NumPy Pipeline and LangGraph
+        Transcript Assistant} \\
+        Plainer; leads with the artefacts.
+  \item \textbf{RAG from First Principles: Building, Wrapping, and Measuring a
+        Retrieval Pipeline} \\
+        Strongest if the reader is technical; slightly informal for a screening
+        filter.
+\end{enumerate}
+
+\noindent
+Dates: Aug 2026 -- Present.
+
+\subsection{Primary bullets (use these three)}
+
+\begin{enumerate}[leftmargin=*,itemsep=5pt]
+
+\item Implemented a RAG retrieval pipeline in NumPy around a MiniLM-384d encoder
+--- overlapping character chunking, unit-normalised embeddings, dot-product cosine
+search over an $(N \times 384)$ matrix, and cited context assembly --- to work
+without retrieval-framework abstractions.
+
+\item Built a transcript QA assistant on LangChain/LangGraph/Streamlit (Chroma,
+Groq \texttt{gpt-oss-120b}): a two-node retrieve--generate graph with
+SQLite-checkpointed resumable chat threads, \texttt{txt}/\texttt{pdf}/\texttt{srt}/\texttt{vtt}
+ingestion, and map-reduce summarisation under a token-rate cap.
+
+\item Benchmarked both on a 35-question span-labelled gold set over a
+53k-character corpus: hit@4 0.86 vs 0.83 at 8--10\,ms retrieval, and a chunk-size
+ablation isolating chunking --- not the framework --- as the dominant factor,
+lifting hit@4 to 0.89 and hit@10 to 1.00.
+
+\end{enumerate}
+
+\noindent
+\textbf{On length:} at normal resume font each of these runs to two lines. If you
+need three single lines, use the compressed set below and keep the detail for the
+interview.
+
+\subsection{Compressed variants (one line each)}
+
+\begin{enumerate}[leftmargin=*,itemsep=4pt]
+  \item Implemented RAG retrieval in NumPy --- overlap chunking, normalised
+        MiniLM-384d embeddings, dot-product cosine search --- with no retrieval framework.
+  \item Built a LangGraph/Streamlit transcript QA assistant: two-node
+        retrieve--generate graph, Chroma store, SQLite-checkpointed resumable threads, 4 input formats.
+  \item Benchmarked both on 35 span-labelled questions: hit@4 0.86 vs 0.83;
+        ablation showed chunk size, not the framework, drives retrieval quality (hit@10 1.00 at 800/150).
+\end{enumerate}
+
+\subsection{Emphasis by target role}
+
+\begin{longtable}{@{}R{4.0cm}R{11.2cm}@{}}
+\toprule
+\textbf{Role} & \textbf{What to foreground} \\
+\midrule
+\endhead
+Capital One --- Associate, Business Analysis &
+Lead with bullet 3. The story is measurement and a controlled experiment that
+overturned a first reading: you designed a gold set, found a confound, ran an
+ablation, and reported effect sizes against sample-size caveats. Keep the
+implementation bullets short --- they are context, not the point. \\
+\addlinespace
+Mastercard --- Data Scientist II &
+Lead with bullet 3, then bullet 1. Emphasise evaluation design (span-derived
+labels, hit@k/MRR, per-configuration relabelling) and the explicit statement that
+one-question differences at $n=35$ are noise. That sentence is the most senior
+thing on the page. \\
+\addlinespace
+EXL --- AI Engineer &
+Lead with bullet 2, then 3. Foreground the system: LangGraph state and
+checkpointing, persistence tiers, rate-limit handling with map-reduce and
+backoff, streaming. Then use bullet 3 to show you measure what you build. \\
+\bottomrule
+\end{longtable}
+
+\noindent
+\textbf{Vocabulary to keep consistent everywhere:} \emph{served locally} (not
+deployed), \emph{two-node graph} / \emph{pipeline} (not agent),
+\emph{context-constrained} (not verified-grounded), \emph{retrieval pipeline in
+NumPy} (not from-scratch embeddings).
+
+% =====================================================================
+\section{Interview questions this version invites}
+% =====================================================================
+
+Version 1 listed ten questions about the framework application; they all still
+apply. These five are new, and specific to the comparison.
+
+\begin{enumerate}[leftmargin=*,itemsep=6pt]
+
+\item \textbf{Your NumPy version beat the framework. Why not just delete the
+framework one?}\\
+\emph{Answer:} Because the win was not real. At the defaults it was 0.857 versus
+0.829, but the two systems chunked differently --- 800/150 against 1000/200. When I
+held chunk size constant the gap reversed or vanished, and at 800/150 the
+framework pipeline was actually best at hit@4 0.886 and hit@10 1.000. The
+difference was chunk size, not NumPy versus Chroma. What the framework really
+buys is capability --- PDF and subtitle parsing, persistence, checkpointed
+multi-turn threads --- none of which my benchmark measures.
+
+\item \textbf{Your benchmark says hit@4 0.886 versus 0.857. Is that a real
+difference?}\\
+\emph{Answer:} No. With 35 questions, one question is 2.9 points, so that gap is a
+single question and well inside noise. The only effects I would defend are the
+chunk-size ones, which move three to five questions. If I needed the
+implementation comparison to be conclusive I would need several hundred questions
+across multiple documents, or a paired test on per-question outcomes.
+
+\item \textbf{How did you build the gold labels without hand-annotating
+everything?}\\
+\emph{Answer:} Each question carries a short answer span, and any chunk containing
+that span is gold. It makes labelling reproducible and auditable rather than a
+list of indices I typed, and it survives re-chunking --- which mattered, because
+the ablation changes chunk boundaries and I needed labels recomputed for each
+configuration. It also handles overlap honestly: a fact straddling a boundary is
+genuinely in two chunks and both count.
+
+\item \textbf{You compared retrieval, but RAG is retrieval plus generation. What
+did you not measure?}\\
+\emph{Answer:} Generation, and I am explicit about it. I did not measure answer
+faithfulness, refusal behaviour on unanswerable questions, or end-to-end latency,
+because those need live API calls against two different providers --- Anthropic in
+one pipeline, Groq in the other --- and are confounded by the model choice rather
+than the retrieval design. Retrieval is also the half worth fixing first: if the
+right chunk is not retrieved, no model recovers.
+
+\item \textbf{Which implementation would you take to production?}\\
+\emph{Answer:} The framework one, at 800/150 rather than its current 1000/200, and
+I would port two things from the NumPy version: the retrieval scores, which are
+the best debugging signal in the system, and the numbered chunk citations, so an
+answer can be checked against its source. Ironically the 190-line script has
+better provenance than the application does.
+
+\end{enumerate}
+
+% =====================================================================
+\section{What to do next}
+% =====================================================================
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Rotate the five API keys still committed in \texttt{.env}.}
+        Unchanged from version 1, and still the most urgent item. The file is in
+        the initial commit and the repository has a GitHub remote.
+  \item \textbf{Change the application's splitter to 800/150.} One line, measured,
+        and worth 5.7 points of hit@4 plus a perfect hit@10 on this corpus.
+  \item \textbf{Surface retrieval scores and citations in the Streamlit UI.} Port
+        what \texttt{rag\_annotated.py} already does. It makes ``grounded''
+        defensible rather than aspirational.
+  \item \textbf{Stop tracking the \texttt{langchain/} virtual environment in git}
+        (18{,}110 of 18{,}184 changed files) and write a
+        \texttt{requirements.txt} that can actually install the app.
+  \item \textbf{Optional, if a live URL matters:} deploy on Hugging Face Spaces,
+        which has the RAM for \texttt{torch} and purchasable persistent storage
+        for the Chroma and checkpoint databases. Only then does the word
+        ``deployed'' belong on the resume.
+\end{enumerate}
+
+\vspace{0.8em}
+\noindent
+\textbf{Closing note.} The strongest thing here is no longer either
+implementation. It is that you built the same system twice, measured both against
+one gold set, found a confound in your own first result, ran an ablation to
+isolate it, and can state the effect sizes alongside what the sample size does
+and does not support. Most candidates present a project that works. Presenting a
+project you have genuinely interrogated is a different conversation.
+
+\end{document}

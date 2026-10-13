@@ -1,0 +1,2860 @@
+[
+  {
+    "backend": "chroma (app stack: HuggingFaceEmbeddings + Chroma HNSW)",
+    "questions": 35,
+    "hit_at": {
+      "1": 0.4857142857142857,
+      "3": 0.7428571428571429,
+      "4": 0.8285714285714286,
+      "5": 0.8285714285714286,
+      "10": 0.9428571428571428
+    },
+    "recall_at": {
+      "1": 0.42857142857142855,
+      "3": 0.7142857142857143,
+      "4": 0.780952380952381,
+      "5": 0.8047619047619048,
+      "10": 0.9285714285714286
+    },
+    "mrr": 0.632766439909297,
+    "latency_ms": {
+      "mean": 9.540951251983643,
+      "p50": 9.703809395432472,
+      "p95": 10.677777230739594,
+      "max": 11.098599061369896
+    },
+    "misses": [
+      {
+        "id": 5,
+        "question": "What is a weight in a machine learning model?",
+        "gold": [
+          4
+        ],
+        "retrieved": [
+          5,
+          6,
+          7,
+          3,
+          23,
+          8,
+          2,
+          62,
+          4,
+          1
+        ],
+        "first_gold_rank": 9,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 10,
+        "question": "What is the bandwidth of ordinary system RAM feeding a GPU?",
+        "gold": [
+          14
+        ],
+        "retrieved": [
+          17,
+          16,
+          29,
+          42,
+          28,
+          1,
+          14,
+          13,
+          39,
+          12
+        ],
+        "first_gold_rank": 7,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 15,
+        "question": "Which software actually loads the model onto the GPU and drives the cores?",
+        "gold": [
+          18
+        ],
+        "retrieved": [
+          1,
+          13,
+          40,
+          14,
+          41,
+          39,
+          42,
+          28,
+          20,
+          11
+        ],
+        "first_gold_rank": null,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": false
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 0.0
+        }
+      },
+      {
+        "id": 28,
+        "question": "How much throughput improvement does cache-aware routing give?",
+        "gold": [
+          49
+        ],
+        "retrieved": [
+          53,
+          47,
+          54,
+          45,
+          52,
+          37,
+          49,
+          17,
+          1,
+          36
+        ],
+        "first_gold_rank": 7,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 29,
+        "question": "How much more tokens per second do you get by splitting prefill and decode pools?",
+        "gold": [
+          51
+        ],
+        "retrieved": [
+          50,
+          32,
+          30,
+          28,
+          31,
+          36,
+          37,
+          27,
+          24,
+          25
+        ],
+        "first_gold_rank": null,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": false
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 0.0
+        }
+      },
+      {
+        "id": 30,
+        "question": "Which platform does LLM-D run on top of?",
+        "gold": [
+          51
+        ],
+        "retrieved": [
+          52,
+          48,
+          2,
+          61,
+          49,
+          51,
+          50,
+          1,
+          54,
+          57
+        ],
+        "first_gold_rank": 6,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 1.0
+        }
+      }
+    ],
+    "per_question": [
+      {
+        "id": 1,
+        "question": "How much are Amazon, Google, Microsoft and Meta spending on AI infrastructure this year?",
+        "gold": [
+          0
+        ],
+        "retrieved": [
+          0,
+          62,
+          51,
+          63,
+          64,
+          61,
+          1,
+          2,
+          52,
+          21
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 2,
+        "question": "How much money does McKinsey expect to go into data centres by 2030?",
+        "gold": [
+          0
+        ],
+        "retrieved": [
+          0,
+          63,
+          62,
+          39,
+          1,
+          51,
+          61,
+          37,
+          38,
+          2
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 3,
+        "question": "Who is the instructor presenting this course?",
+        "gold": [
+          2
+        ],
+        "retrieved": [
+          63,
+          2,
+          4,
+          3,
+          8,
+          5,
+          61,
+          6,
+          29,
+          7
+        ],
+        "first_gold_rank": 2,
+        "hit": {
+          "1": false,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 4,
+        "question": "Which companies built the open-source LLM-D project?",
+        "gold": [
+          1,
+          2,
+          48
+        ],
+        "retrieved": [
+          51,
+          52,
+          61,
+          2,
+          1,
+          63,
+          0,
+          62,
+          48,
+          53
+        ],
+        "first_gold_rank": 4,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.3333333333333333,
+          "5": 0.6666666666666666,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 5,
+        "question": "What is a weight in a machine learning model?",
+        "gold": [
+          4
+        ],
+        "retrieved": [
+          5,
+          6,
+          7,
+          3,
+          23,
+          8,
+          2,
+          62,
+          4,
+          1
+        ],
+        "first_gold_rank": 9,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 6,
+        "question": "How many gigabytes does a 70 billion parameter model take on disk?",
+        "gold": [
+          8
+        ],
+        "retrieved": [
+          8,
+          40,
+          16,
+          15,
+          38,
+          7,
+          13,
+          47,
+          41,
+          1
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 7,
+        "question": "What is the architecture shape behind every modern language model called?",
+        "gold": [
+          6,
+          7
+        ],
+        "retrieved": [
+          6,
+          3,
+          7,
+          47,
+          56,
+          23,
+          11,
+          31,
+          15,
+          26
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.5,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 8,
+        "question": "How many cores does an Nvidia T4 GPU have?",
+        "gold": [
+          12,
+          13
+        ],
+        "retrieved": [
+          13,
+          14,
+          42,
+          39,
+          12,
+          28,
+          17,
+          29,
+          15,
+          1
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.5,
+          "3": 0.5,
+          "4": 0.5,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 9,
+        "question": "How many operations per second can a CPU do compared to a GPU?",
+        "gold": [
+          13
+        ],
+        "retrieved": [
+          12,
+          13,
+          42,
+          39,
+          17,
+          14,
+          11,
+          28,
+          29,
+          37
+        ],
+        "first_gold_rank": 2,
+        "hit": {
+          "1": false,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 10,
+        "question": "What is the bandwidth of ordinary system RAM feeding a GPU?",
+        "gold": [
+          14
+        ],
+        "retrieved": [
+          17,
+          16,
+          29,
+          42,
+          28,
+          1,
+          14,
+          13,
+          39,
+          12
+        ],
+        "first_gold_rank": 7,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 11,
+        "question": "How much VRAM does a T4 card have?",
+        "gold": [
+          15
+        ],
+        "retrieved": [
+          15,
+          16,
+          17,
+          29,
+          18,
+          1,
+          14,
+          12,
+          36,
+          28
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 12,
+        "question": "What are the three numbers that size every AI workload?",
+        "gold": [
+          16
+        ],
+        "retrieved": [
+          8,
+          0,
+          51,
+          16,
+          4,
+          62,
+          3,
+          11,
+          63,
+          52
+        ],
+        "first_gold_rank": 4,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 13,
+        "question": "How much memory capacity does an H200 have compared to an H100?",
+        "gold": [
+          18
+        ],
+        "retrieved": [
+          18,
+          17,
+          16,
+          50,
+          8,
+          15,
+          29,
+          28,
+          39,
+          38
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 14,
+        "question": "How much compute does a B200 card have?",
+        "gold": [
+          18
+        ],
+        "retrieved": [
+          18,
+          17,
+          16,
+          39,
+          12,
+          11,
+          36,
+          1,
+          13,
+          29
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 15,
+        "question": "Which software actually loads the model onto the GPU and drives the cores?",
+        "gold": [
+          18
+        ],
+        "retrieved": [
+          1,
+          13,
+          40,
+          14,
+          41,
+          39,
+          42,
+          28,
+          20,
+          11
+        ],
+        "first_gold_rank": null,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": false
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 0.0
+        }
+      },
+      {
+        "id": 16,
+        "question": "Which API format does the vLLM server speak?",
+        "gold": [
+          21
+        ],
+        "retrieved": [
+          20,
+          19,
+          64,
+          21,
+          25,
+          26,
+          30,
+          41,
+          22,
+          60
+        ],
+        "first_gold_rank": 4,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 17,
+        "question": "Roughly how much of a word is one token?",
+        "gold": [
+          22
+        ],
+        "retrieved": [
+          23,
+          35,
+          22,
+          24,
+          36,
+          27,
+          30,
+          31,
+          37,
+          47
+        ],
+        "first_gold_rank": 3,
+        "hit": {
+          "1": false,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 18,
+        "question": "What does TTFT stand for and what does it measure?",
+        "gold": [
+          27
+        ],
+        "retrieved": [
+          30,
+          27,
+          28,
+          26,
+          7,
+          8,
+          15,
+          24,
+          25,
+          23
+        ],
+        "first_gold_rank": 2,
+        "hit": {
+          "1": false,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 19,
+        "question": "What is the technical name for the initial pause phase before the first token?",
+        "gold": [
+          27
+        ],
+        "retrieved": [
+          27,
+          26,
+          34,
+          32,
+          25,
+          30,
+          31,
+          22,
+          50,
+          35
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 20,
+        "question": "What does TPOT stand for?",
+        "gold": [
+          30
+        ],
+        "retrieved": [
+          30,
+          26,
+          51,
+          48,
+          27,
+          2,
+          49,
+          58,
+          59,
+          57
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 21,
+        "question": "What is the KV cache and what does it store?",
+        "gold": [
+          32
+        ],
+        "retrieved": [
+          38,
+          45,
+          32,
+          31,
+          36,
+          53,
+          15,
+          17,
+          16,
+          13
+        ],
+        "first_gold_rank": 3,
+        "hit": {
+          "1": false,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 22,
+        "question": "How much cheaper is a cached input token than a fresh one?",
+        "gold": [
+          34,
+          35
+        ],
+        "retrieved": [
+          35,
+          36,
+          37,
+          32,
+          33,
+          31,
+          53,
+          22,
+          38,
+          30
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.5,
+          "3": 0.5,
+          "4": 0.5,
+          "5": 0.5,
+          "10": 0.5
+        }
+      },
+      {
+        "id": 23,
+        "question": "What is batching and why does it raise throughput?",
+        "gold": [
+          36,
+          37
+        ],
+        "retrieved": [
+          37,
+          38,
+          36,
+          50,
+          28,
+          47,
+          30,
+          53,
+          20,
+          12
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.5,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 24,
+        "question": "What resource actually limits how many users one GPU can serve?",
+        "gold": [
+          39
+        ],
+        "retrieved": [
+          1,
+          39,
+          40,
+          42,
+          37,
+          36,
+          43,
+          13,
+          44,
+          38
+        ],
+        "first_gold_rank": 2,
+        "hit": {
+          "1": false,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 25,
+        "question": "What is sharding a model across GPUs?",
+        "gold": [
+          43
+        ],
+        "retrieved": [
+          43,
+          41,
+          44,
+          1,
+          42,
+          40,
+          39,
+          13,
+          3,
+          2
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 26,
+        "question": "What fast interconnect joins GPUs inside a single machine?",
+        "gold": [
+          42
+        ],
+        "retrieved": [
+          42,
+          43,
+          1,
+          17,
+          40,
+          12,
+          14,
+          41,
+          39,
+          44
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 27,
+        "question": "Why does an ordinary round-robin load balancer fail for LLM serving?",
+        "gold": [
+          45
+        ],
+        "retrieved": [
+          46,
+          49,
+          45,
+          47,
+          44,
+          48,
+          1,
+          57,
+          52,
+          50
+        ],
+        "first_gold_rank": 3,
+        "hit": {
+          "1": false,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 28,
+        "question": "How much throughput improvement does cache-aware routing give?",
+        "gold": [
+          49
+        ],
+        "retrieved": [
+          53,
+          47,
+          54,
+          45,
+          52,
+          37,
+          49,
+          17,
+          1,
+          36
+        ],
+        "first_gold_rank": 7,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 29,
+        "question": "How much more tokens per second do you get by splitting prefill and decode pools?",
+        "gold": [
+          51
+        ],
+        "retrieved": [
+          50,
+          32,
+          30,
+          28,
+          31,
+          36,
+          37,
+          27,
+          24,
+          25
+        ],
+        "first_gold_rank": null,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": false
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 0.0
+        }
+      },
+      {
+        "id": 30,
+        "question": "Which platform does LLM-D run on top of?",
+        "gold": [
+          51
+        ],
+        "retrieved": [
+          52,
+          48,
+          2,
+          61,
+          49,
+          51,
+          50,
+          1,
+          54,
+          57
+        ],
+        "first_gold_rank": 6,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 31,
+        "question": "Which Kubernetes object keeps a sharded model's pods together as one unit?",
+        "gold": [
+          58
+        ],
+        "retrieved": [
+          58,
+          57,
+          56,
+          55,
+          60,
+          59,
+          54,
+          61,
+          44,
+          41
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 32,
+        "question": "Which file describes the fleet layout when deploying with Helm?",
+        "gold": [
+          58
+        ],
+        "retrieved": [
+          55,
+          58,
+          54,
+          59,
+          60,
+          56,
+          57,
+          53,
+          8,
+          52
+        ],
+        "first_gold_rank": 2,
+        "hit": {
+          "1": false,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 33,
+        "question": "What fraction of organisations hosting generative AI use Kubernetes for inference?",
+        "gold": [
+          51
+        ],
+        "retrieved": [
+          51,
+          52,
+          60,
+          62,
+          56,
+          0,
+          55,
+          61,
+          64,
+          59
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 34,
+        "question": "What are the well-lit paths in LLM-D?",
+        "gold": [
+          53
+        ],
+        "retrieved": [
+          54,
+          52,
+          53,
+          2,
+          49,
+          48,
+          50,
+          61,
+          56,
+          55
+        ],
+        "first_gold_rank": 3,
+        "hit": {
+          "1": false,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 35,
+        "question": "Where does the LLM-D project live online?",
+        "gold": [
+          61
+        ],
+        "retrieved": [
+          61,
+          52,
+          2,
+          51,
+          19,
+          63,
+          49,
+          48,
+          55,
+          1
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      }
+    ]
+  },
+  {
+    "backend": "brute (MiniLM + exact NumPy cosine)",
+    "questions": 35,
+    "hit_at": {
+      "1": 0.4857142857142857,
+      "3": 0.7428571428571429,
+      "4": 0.8285714285714286,
+      "5": 0.8285714285714286,
+      "10": 0.9428571428571428
+    },
+    "recall_at": {
+      "1": 0.42857142857142855,
+      "3": 0.7142857142857143,
+      "4": 0.780952380952381,
+      "5": 0.8047619047619048,
+      "10": 0.9285714285714286
+    },
+    "mrr": 0.632766439909297,
+    "latency_ms": {
+      "mean": 7.88936758680003,
+      "p50": 7.9880282282829285,
+      "p95": 9.256500750780106,
+      "max": 9.488025680184364
+    },
+    "misses": [
+      {
+        "id": 5,
+        "question": "What is a weight in a machine learning model?",
+        "gold": [
+          4
+        ],
+        "retrieved": [
+          5,
+          6,
+          7,
+          3,
+          23,
+          8,
+          2,
+          62,
+          4,
+          1
+        ],
+        "first_gold_rank": 9,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 10,
+        "question": "What is the bandwidth of ordinary system RAM feeding a GPU?",
+        "gold": [
+          14
+        ],
+        "retrieved": [
+          17,
+          16,
+          29,
+          42,
+          28,
+          1,
+          14,
+          13,
+          39,
+          12
+        ],
+        "first_gold_rank": 7,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 15,
+        "question": "Which software actually loads the model onto the GPU and drives the cores?",
+        "gold": [
+          18
+        ],
+        "retrieved": [
+          1,
+          13,
+          40,
+          14,
+          41,
+          39,
+          42,
+          28,
+          20,
+          11
+        ],
+        "first_gold_rank": null,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": false
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 0.0
+        }
+      },
+      {
+        "id": 28,
+        "question": "How much throughput improvement does cache-aware routing give?",
+        "gold": [
+          49
+        ],
+        "retrieved": [
+          53,
+          47,
+          54,
+          45,
+          52,
+          37,
+          49,
+          17,
+          1,
+          36
+        ],
+        "first_gold_rank": 7,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 29,
+        "question": "How much more tokens per second do you get by splitting prefill and decode pools?",
+        "gold": [
+          51
+        ],
+        "retrieved": [
+          50,
+          32,
+          30,
+          28,
+          31,
+          36,
+          37,
+          27,
+          24,
+          25
+        ],
+        "first_gold_rank": null,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": false
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 0.0
+        }
+      },
+      {
+        "id": 30,
+        "question": "Which platform does LLM-D run on top of?",
+        "gold": [
+          51
+        ],
+        "retrieved": [
+          52,
+          48,
+          2,
+          61,
+          49,
+          51,
+          50,
+          1,
+          54,
+          57
+        ],
+        "first_gold_rank": 6,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 1.0
+        }
+      }
+    ],
+    "per_question": [
+      {
+        "id": 1,
+        "question": "How much are Amazon, Google, Microsoft and Meta spending on AI infrastructure this year?",
+        "gold": [
+          0
+        ],
+        "retrieved": [
+          0,
+          62,
+          51,
+          63,
+          64,
+          61,
+          1,
+          2,
+          52,
+          21
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 2,
+        "question": "How much money does McKinsey expect to go into data centres by 2030?",
+        "gold": [
+          0
+        ],
+        "retrieved": [
+          0,
+          63,
+          62,
+          39,
+          1,
+          51,
+          61,
+          37,
+          38,
+          2
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 3,
+        "question": "Who is the instructor presenting this course?",
+        "gold": [
+          2
+        ],
+        "retrieved": [
+          63,
+          2,
+          4,
+          3,
+          8,
+          5,
+          61,
+          6,
+          29,
+          7
+        ],
+        "first_gold_rank": 2,
+        "hit": {
+          "1": false,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 4,
+        "question": "Which companies built the open-source LLM-D project?",
+        "gold": [
+          1,
+          2,
+          48
+        ],
+        "retrieved": [
+          51,
+          52,
+          61,
+          2,
+          1,
+          63,
+          0,
+          62,
+          48,
+          53
+        ],
+        "first_gold_rank": 4,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.3333333333333333,
+          "5": 0.6666666666666666,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 5,
+        "question": "What is a weight in a machine learning model?",
+        "gold": [
+          4
+        ],
+        "retrieved": [
+          5,
+          6,
+          7,
+          3,
+          23,
+          8,
+          2,
+          62,
+          4,
+          1
+        ],
+        "first_gold_rank": 9,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 6,
+        "question": "How many gigabytes does a 70 billion parameter model take on disk?",
+        "gold": [
+          8
+        ],
+        "retrieved": [
+          8,
+          40,
+          16,
+          15,
+          38,
+          7,
+          13,
+          47,
+          41,
+          1
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 7,
+        "question": "What is the architecture shape behind every modern language model called?",
+        "gold": [
+          6,
+          7
+        ],
+        "retrieved": [
+          6,
+          3,
+          7,
+          47,
+          56,
+          23,
+          11,
+          31,
+          15,
+          26
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.5,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 8,
+        "question": "How many cores does an Nvidia T4 GPU have?",
+        "gold": [
+          12,
+          13
+        ],
+        "retrieved": [
+          13,
+          14,
+          42,
+          39,
+          12,
+          28,
+          17,
+          29,
+          15,
+          1
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.5,
+          "3": 0.5,
+          "4": 0.5,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 9,
+        "question": "How many operations per second can a CPU do compared to a GPU?",
+        "gold": [
+          13
+        ],
+        "retrieved": [
+          12,
+          13,
+          42,
+          39,
+          17,
+          14,
+          11,
+          28,
+          29,
+          37
+        ],
+        "first_gold_rank": 2,
+        "hit": {
+          "1": false,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 10,
+        "question": "What is the bandwidth of ordinary system RAM feeding a GPU?",
+        "gold": [
+          14
+        ],
+        "retrieved": [
+          17,
+          16,
+          29,
+          42,
+          28,
+          1,
+          14,
+          13,
+          39,
+          12
+        ],
+        "first_gold_rank": 7,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 11,
+        "question": "How much VRAM does a T4 card have?",
+        "gold": [
+          15
+        ],
+        "retrieved": [
+          15,
+          16,
+          17,
+          29,
+          18,
+          1,
+          14,
+          12,
+          36,
+          28
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 12,
+        "question": "What are the three numbers that size every AI workload?",
+        "gold": [
+          16
+        ],
+        "retrieved": [
+          8,
+          0,
+          51,
+          16,
+          4,
+          62,
+          3,
+          11,
+          63,
+          52
+        ],
+        "first_gold_rank": 4,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 13,
+        "question": "How much memory capacity does an H200 have compared to an H100?",
+        "gold": [
+          18
+        ],
+        "retrieved": [
+          18,
+          17,
+          16,
+          50,
+          8,
+          15,
+          29,
+          28,
+          39,
+          38
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 14,
+        "question": "How much compute does a B200 card have?",
+        "gold": [
+          18
+        ],
+        "retrieved": [
+          18,
+          17,
+          16,
+          39,
+          12,
+          11,
+          36,
+          1,
+          13,
+          29
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 15,
+        "question": "Which software actually loads the model onto the GPU and drives the cores?",
+        "gold": [
+          18
+        ],
+        "retrieved": [
+          1,
+          13,
+          40,
+          14,
+          41,
+          39,
+          42,
+          28,
+          20,
+          11
+        ],
+        "first_gold_rank": null,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": false
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 0.0
+        }
+      },
+      {
+        "id": 16,
+        "question": "Which API format does the vLLM server speak?",
+        "gold": [
+          21
+        ],
+        "retrieved": [
+          20,
+          19,
+          64,
+          21,
+          25,
+          26,
+          30,
+          41,
+          22,
+          60
+        ],
+        "first_gold_rank": 4,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 17,
+        "question": "Roughly how much of a word is one token?",
+        "gold": [
+          22
+        ],
+        "retrieved": [
+          23,
+          35,
+          22,
+          24,
+          36,
+          27,
+          30,
+          31,
+          37,
+          47
+        ],
+        "first_gold_rank": 3,
+        "hit": {
+          "1": false,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 18,
+        "question": "What does TTFT stand for and what does it measure?",
+        "gold": [
+          27
+        ],
+        "retrieved": [
+          30,
+          27,
+          28,
+          26,
+          7,
+          8,
+          15,
+          24,
+          25,
+          23
+        ],
+        "first_gold_rank": 2,
+        "hit": {
+          "1": false,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 19,
+        "question": "What is the technical name for the initial pause phase before the first token?",
+        "gold": [
+          27
+        ],
+        "retrieved": [
+          27,
+          26,
+          34,
+          32,
+          25,
+          30,
+          31,
+          22,
+          50,
+          35
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 20,
+        "question": "What does TPOT stand for?",
+        "gold": [
+          30
+        ],
+        "retrieved": [
+          30,
+          26,
+          51,
+          48,
+          27,
+          2,
+          49,
+          58,
+          59,
+          57
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 21,
+        "question": "What is the KV cache and what does it store?",
+        "gold": [
+          32
+        ],
+        "retrieved": [
+          38,
+          45,
+          32,
+          31,
+          36,
+          53,
+          15,
+          17,
+          16,
+          13
+        ],
+        "first_gold_rank": 3,
+        "hit": {
+          "1": false,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 22,
+        "question": "How much cheaper is a cached input token than a fresh one?",
+        "gold": [
+          34,
+          35
+        ],
+        "retrieved": [
+          35,
+          36,
+          37,
+          32,
+          33,
+          31,
+          53,
+          22,
+          38,
+          30
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.5,
+          "3": 0.5,
+          "4": 0.5,
+          "5": 0.5,
+          "10": 0.5
+        }
+      },
+      {
+        "id": 23,
+        "question": "What is batching and why does it raise throughput?",
+        "gold": [
+          36,
+          37
+        ],
+        "retrieved": [
+          37,
+          38,
+          36,
+          50,
+          28,
+          47,
+          30,
+          53,
+          20,
+          12
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.5,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 24,
+        "question": "What resource actually limits how many users one GPU can serve?",
+        "gold": [
+          39
+        ],
+        "retrieved": [
+          1,
+          39,
+          40,
+          42,
+          37,
+          36,
+          43,
+          13,
+          44,
+          38
+        ],
+        "first_gold_rank": 2,
+        "hit": {
+          "1": false,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 25,
+        "question": "What is sharding a model across GPUs?",
+        "gold": [
+          43
+        ],
+        "retrieved": [
+          43,
+          41,
+          44,
+          1,
+          42,
+          40,
+          39,
+          13,
+          3,
+          2
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 26,
+        "question": "What fast interconnect joins GPUs inside a single machine?",
+        "gold": [
+          42
+        ],
+        "retrieved": [
+          42,
+          43,
+          1,
+          17,
+          40,
+          12,
+          14,
+          41,
+          39,
+          44
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 27,
+        "question": "Why does an ordinary round-robin load balancer fail for LLM serving?",
+        "gold": [
+          45
+        ],
+        "retrieved": [
+          46,
+          49,
+          45,
+          47,
+          44,
+          48,
+          1,
+          57,
+          52,
+          50
+        ],
+        "first_gold_rank": 3,
+        "hit": {
+          "1": false,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 28,
+        "question": "How much throughput improvement does cache-aware routing give?",
+        "gold": [
+          49
+        ],
+        "retrieved": [
+          53,
+          47,
+          54,
+          45,
+          52,
+          37,
+          49,
+          17,
+          1,
+          36
+        ],
+        "first_gold_rank": 7,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 29,
+        "question": "How much more tokens per second do you get by splitting prefill and decode pools?",
+        "gold": [
+          51
+        ],
+        "retrieved": [
+          50,
+          32,
+          30,
+          28,
+          31,
+          36,
+          37,
+          27,
+          24,
+          25
+        ],
+        "first_gold_rank": null,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": false
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 0.0
+        }
+      },
+      {
+        "id": 30,
+        "question": "Which platform does LLM-D run on top of?",
+        "gold": [
+          51
+        ],
+        "retrieved": [
+          52,
+          48,
+          2,
+          61,
+          49,
+          51,
+          50,
+          1,
+          54,
+          57
+        ],
+        "first_gold_rank": 6,
+        "hit": {
+          "1": false,
+          "3": false,
+          "4": false,
+          "5": false,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 31,
+        "question": "Which Kubernetes object keeps a sharded model's pods together as one unit?",
+        "gold": [
+          58
+        ],
+        "retrieved": [
+          58,
+          57,
+          56,
+          55,
+          60,
+          59,
+          54,
+          61,
+          44,
+          41
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 32,
+        "question": "Which file describes the fleet layout when deploying with Helm?",
+        "gold": [
+          58
+        ],
+        "retrieved": [
+          55,
+          58,
+          54,
+          59,
+          60,
+          56,
+          57,
+          53,
+          8,
+          52
+        ],
+        "first_gold_rank": 2,
+        "hit": {
+          "1": false,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 33,
+        "question": "What fraction of organisations hosting generative AI use Kubernetes for inference?",
+        "gold": [
+          51
+        ],
+        "retrieved": [
+          51,
+          52,
+          60,
+          62,
+          56,
+          0,
+          55,
+          61,
+          64,
+          59
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 34,
+        "question": "What are the well-lit paths in LLM-D?",
+        "gold": [
+          53
+        ],
+        "retrieved": [
+          54,
+          52,
+          53,
+          2,
+          49,
+          48,
+          50,
+          61,
+          56,
+          55
+        ],
+        "first_gold_rank": 3,
+        "hit": {
+          "1": false,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 0.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      },
+      {
+        "id": 35,
+        "question": "Where does the LLM-D project live online?",
+        "gold": [
+          61
+        ],
+        "retrieved": [
+          61,
+          52,
+          2,
+          51,
+          19,
+          63,
+          49,
+          48,
+          55,
+          1
+        ],
+        "first_gold_rank": 1,
+        "hit": {
+          "1": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "10": true
+        },
+        "recall": {
+          "1": 1.0,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "10": 1.0
+        }
+      }
+    ]
+  }
+]

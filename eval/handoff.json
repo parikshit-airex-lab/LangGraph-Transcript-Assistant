@@ -1,0 +1,233 @@
+{
+  "handoff": {
+    "purpose": "Context transfer for a new Claude Code session continuing work on the RAG project on the Pascal server. Everything below was verified by reading code or by executing the evaluation harness; nothing is assumed.",
+    "created": "2026-09-24",
+    "supersedes": "eval/rag_project_audit.tex (v1)",
+    "authoritative_document": "eval/rag_project_audit_v2.tex",
+    "how_to_use": "Read this file first, then eval/rag_project_audit_v2.tex for the prose version. Do not re-derive the audit; it is done. Verify any file:line reference before relying on it, since the code may have moved."
+  },
+
+  "project": {
+    "repo_root": "/home/parikshit/ML/DL/Lang_Chain/Lang_Chain",
+    "is_git_repo": true,
+    "git_remote": "https://github.com/Diu32/LangChain_LangGraph.git",
+    "owner_context": "M.Tech (Research), Computational and Data Sciences, IISc Bengaluru. Campus placements: Capital One (Associate, Business Analysis), Mastercard (Data Scientist II), EXL (AI Engineer).",
+    "goal": "Two implementations of the same RAG idea, benchmarked against each other, described accurately on a one-page resume and defensible in interview.",
+    "components": {
+      "framework_app": {
+        "path": "Transcript_RAG_With_DB/",
+        "files": ["Transcript_RAG_backend.py", "Transcript_RAG_Loader.py", "Transcript_RAG_Frontend.py"],
+        "lines_total": 546,
+        "lines_non_blank_non_comment": 437,
+        "status": "current version; this is what the resume should describe"
+      },
+      "framework_app_earlier": {
+        "path": "RAG_Langgraph/",
+        "difference": "in-memory Chroma, InMemorySaver instead of SqliteSaver"
+      },
+      "from_scratch": {
+        "path": "rag_annotated.py",
+        "note": "moved into the Lang_Chain repo root on 2026-09-24; previously lived outside it",
+        "lines": 633,
+        "note_on_lines": "heavily annotated; executable body is roughly 190 lines"
+      },
+      "eval_harness": {
+        "path": "eval/",
+        "created_by": "this work; not part of the original project"
+      }
+    }
+  },
+
+  "environment": {
+    "server": "pascal, Linux 6.14, GPU NVIDIA RTX 6000 Ada (cuda available)",
+    "python_for_eval": "/home/parikshit/ML/DL/agentic_venv/bin/python (3.13.3)",
+    "preinstalled_in_that_venv": ["torch", "sentence_transformers", "numpy", "langchain(core only)"],
+    "missing_from_that_venv": ["chromadb", "langchain-community", "langchain-huggingface", "langgraph", "streamlit", "langchain-groq", "pip"],
+    "pip_is_absent": "That venv has no pip module. Use uv: `uv pip install --target=<dir> --python /home/parikshit/ML/DL/agentic_venv/bin/python <pkgs>`, then run with PYTHONPATH=<dir>. uv is at /snap/bin/uv.",
+    "how_chroma_backend_was_run": "Installed chromadb + langchain-community + langchain-huggingface into a throwaway dir and set PYTHONPATH. That dir was session-scratch and is GONE; reinstall if you need the langchain backend again.",
+    "app_venv": "langchain/ in the repo is a WINDOWS virtualenv (Lib/, Scripts/). It does not run on this Linux box and should not be in git.",
+    "embedding_model_cache": "~/.cache/huggingface (all-MiniLM-L6-v2 downloaded, ~90MB, cold load ~35s)",
+    "run_eval_cpu": "CUDA_VISIBLE_DEVICES='' to force CPU; CPU numbers are the deployment-relevant ones."
+  },
+
+  "audit_framework_app": {
+    "embedding_model": {"name": "all-MiniLM-L6-v2", "dim": 384, "max_seq_tokens": 256, "normalised": true, "local": true, "evidence": "Transcript_RAG_backend.py:22"},
+    "llm": {"name": "openai/gpt-oss-120b", "provider": "Groq API", "local": false, "evidence": "Transcript_RAG_backend.py:21"},
+    "vector_store": {"name": "Chroma", "persisted": true, "path": "Transcript_RAG_With_DB/storage/chroma_store", "collection_per_transcript": true, "evidence": "Transcript_RAG_backend.py:28,184-191"},
+    "similarity_metric": {"configured": "none (Chroma default l2)", "effective": "order-equivalent to cosine because MiniLM output is unit-normalised", "verified_empirically": true},
+    "chunking_txt_pdf": {"splitter": "RecursiveCharacterTextSplitter", "chunk_size": 1000, "chunk_overlap": 200, "evidence": "Transcript_RAG_Loader.py:8"},
+    "chunking_srt_vtt": {"method": "hand-written regex cue extraction, cues grouped to ~1000 chars", "overlap": 0, "keeps_timestamp_of_first_cue": true, "evidence": "Transcript_RAG_Loader.py:12-55"},
+    "retrieval_k": {"value": 4, "reranking": false, "mmr": false, "score_threshold": false, "evidence": "Transcript_RAG_backend.py:231"},
+    "langgraph": {
+      "nodes": ["retrieve", "generate"],
+      "edges": ["START->retrieve", "retrieve->generate", "generate->END"],
+      "conditional_routing": false,
+      "query_rewriting": false,
+      "retrieval_grading": false,
+      "retry_in_graph": false,
+      "retry_outside_graph": "_invoke_with_backoff, a plain Python loop on RateLimitError, lines 95-107",
+      "checkpointer": "SqliteSaver over storage/chat_history.db",
+      "thread_id_format": "{transcript_id}::{chat_id}",
+      "evidence": "Transcript_RAG_backend.py:247-254",
+      "verdict": "fixed retrieve->generate chain; LangGraph is used for the checkpointer and node-filtered streaming, NOT for branching"
+    },
+    "grounding": {
+      "mechanism": "prompt instruction only",
+      "prompt_quote": "Use ONLY the transcript excerpts below to answer. If the answer isn't in the excerpts, say you don't know based on the transcript.",
+      "evidence": "Transcript_RAG_backend.py:49-56",
+      "low_score_fallback": false,
+      "citations_rendered_in_ui": false,
+      "faithfulness_measured": false
+    },
+    "upload_formats": [".txt", ".pdf", ".srt", ".vtt"],
+    "deployment_artefacts": {
+      "dockerfile": "absent",
+      "requirements": "requirement.txt exists but omits streamlit, langgraph, langchain-groq, chromadb, sentence-transformers, langgraph-checkpoint-sqlite; nothing pinned; cannot install the app",
+      "host_config": "absent",
+      "public_url": "none",
+      "secrets": "load_dotenv() reading a committed .env"
+    },
+    "notable_engineering_worth_crediting": [
+      "three-tier persistence: Chroma on disk + SqliteSaver checkpoints + transcript_meta table, so a transcript resumes without re-upload (lines 174-200, 210-226)",
+      "map-reduce summarisation with 1.5s pacing and exponential backoff to stay under Groq's ~8000 TPM free-tier cap (lines 85-132)",
+      "paths anchored to __file__ rather than cwd"
+    ]
+  },
+
+  "audit_from_scratch": {
+    "file": "rag_annotated.py",
+    "embedding_model": {"name": "all-MiniLM-L6-v2", "dim": 384, "pretrained": true, "normalize_embeddings": true, "evidence": "lines 354, 375"},
+    "llm": {"name": "claude-sonnet-4-6", "provider": "Anthropic SDK", "evidence": "line 562"},
+    "chunking": {"method": "character window with backward snap to last space in second half of window", "size": 800, "overlap": 150, "guard": "asserts overlap < size", "evidence": "lines 181-317"},
+    "index": {"structure": "(N,384) NumPy array + aligned list of dicts", "evidence": "lines 404-414"},
+    "search": {"method": "matrix @ q then argsort", "exact": true, "k": 4, "evidence": "lines 450-464"},
+    "input_formats": [".txt", ".md"],
+    "citations": {"asks_for_chunk_numbers": true, "prints_retrieval_scores": true, "evidence": "lines 517-519, 603-604"},
+    "conversation_memory": false,
+    "persistence": false,
+    "interface": "terminal REPL",
+    "important_correction": "The encoder is PRETRAINED sentence-transformers, not implemented from scratch. The chunking, index and retrieval are hand-written. Resume wording must reflect this."
+  },
+
+  "benchmark": {
+    "harness": "eval/evaluate_pipelines.py",
+    "corpus": {
+      "file": "eval/ai_infra_transcript.txt",
+      "chars": 52826,
+      "provenance": "recovered from the live Chroma collection (65 stored chunks) and de-overlapped back into raw text; all 35 answer spans verified present after reconstruction",
+      "original_source": "ai_infra_transcript.txt, a real transcript the app had indexed"
+    },
+    "questions": {"file": "eval/eval_questions.json", "count": 35},
+    "gold_label_scheme": "Each question carries an answer_span; any chunk containing that span is gold. Labels are recomputed per chunking configuration, which is what makes cross-configuration comparison fair and handles overlap honestly.",
+    "fairness_controls": [
+      "both pipelines receive the same raw document and chunk it themselves",
+      "the NumPy pipeline is driven through its own split()/embed()/retrieve(), imported not reimplemented",
+      "encoder warm in both; embeddings object constructed outside the index timer",
+      "each query timed 3x, minimum taken",
+      "CPU-only run (CUDA_VISIBLE_DEVICES='')"
+    ],
+    "results_at_shipped_defaults": {
+      "framework_1000_200": {"chunks": 65, "mean_chunk_chars": 943, "hit@1": 0.486, "hit@3": 0.743, "hit@4": 0.829, "hit@5": 0.829, "hit@10": 0.943, "recall@4": 0.781, "recall@10": 0.929, "mrr": 0.633, "latency_mean_ms": 9.55, "latency_p95_ms": 10.55, "index_seconds": 1.25},
+      "numpy_800_150": {"chunks": 82, "mean_chunk_chars": 792, "hit@1": 0.486, "hit@3": 0.771, "hit@4": 0.857, "hit@5": 0.886, "hit@10": 0.971, "recall@4": 0.814, "recall@10": 0.943, "mrr": 0.643, "latency_mean_ms": 7.90, "latency_p95_ms": 8.57, "index_seconds": 0.94}
+    },
+    "ablation_hit_at_4": {
+      "500/100": {"framework": 0.800, "numpy": 0.714},
+      "800/150": {"framework": 0.886, "numpy": 0.857},
+      "1000/200": {"framework": 0.829, "numpy": 0.857}
+    },
+    "ablation_mrr": {
+      "500/100": {"framework": 0.642, "numpy": 0.567},
+      "800/150": {"framework": 0.700, "numpy": 0.643},
+      "1000/200": {"framework": 0.633, "numpy": 0.639}
+    },
+    "best_configuration_found": {"pipeline": "framework", "chunking": "800/150", "hit@4": 0.886, "hit@10": 1.000, "mrr": 0.700},
+    "headline_finding": "Chunk size dominates, not the implementation. Within one pipeline, 500->800 chars moves hit@4 by up to 14 points (5 questions); the largest implementation gap at fixed chunk size is 3 points (1 question). The apparent 'NumPy wins' at defaults was a chunking artefact (800/150 vs 1000/200).",
+    "caveats_to_state_before_being_asked": [
+      "n=35, so one question = 2.9 points of hit@4; all implementation gaps are within noise",
+      "gold chunks per question varies 1.11-1.31 across configurations, slightly favouring configurations with more gold chunks",
+      "single-turn only; the app's retrieve node embeds just the last message, so multi-turn performance is lower than these numbers",
+      "retrieval only: generation faithfulness, refusal behaviour and end-to-end latency were NOT measured"
+    ],
+    "chunk_token_stats_at_1000_chars": {"mean_tokens": 235, "max_tokens": 263, "encoder_limit": 256, "chunks_truncated": "4 of 65 (6%)", "note": "trivial loss on this transcript (~2 tokens) but the headroom is thin; dense prose at 1000 chars would truncate routinely"}
+  },
+
+  "eval_harness_usage": {
+    "files": {
+      "eval/evaluate_pipelines.py": "end-to-end comparison; each pipeline chunks the raw doc itself (USE THIS ONE)",
+      "eval/evaluate_rag.py": "earlier chunk-level harness with brute/chroma/numpy-module backends; superseded but still works",
+      "eval/eval_questions.json": "35 questions with answer_span labels",
+      "eval/ai_infra_transcript.txt": "raw corpus",
+      "eval/corpus_ai_infra.json": "the 65 chunks as stored by the app",
+      "eval/pipelines_cpu.json, ablation_800.json, ab_np_1000.json, ab_500.json, results_*.json": "raw result dumps"
+    },
+    "commands": [
+      "PYTHONPATH=<libs> CUDA_VISIBLE_DEVICES='' python eval/evaluate_pipelines.py --out pipelines.json",
+      "python eval/evaluate_pipelines.py --backend numpy   # no langchain deps needed",
+      "python eval/evaluate_pipelines.py --chunk-size 800 --chunk-overlap 150 --out ablation.json"
+    ],
+    "note": "--backend numpy needs only torch + sentence_transformers, so it runs in agentic_venv as-is. --backend langchain needs chromadb + langchain-community + langchain-huggingface installed via uv --target.",
+    "side_effect": "NumpyPipeline creates an empty docs/ dir in cwd because rag_annotated.py indexes at import time."
+  },
+
+  "open_defects": [
+    {"severity": "critical", "item": "Five live API keys committed in .env (present in the initial commit; GitHub remote configured). MUST be rotated. Do not print or reuse them.", "fix": "rotate all five, add .env to .gitignore, git rm --cached .env"},
+    {"severity": "high", "item": "langchain/ Windows virtualenv tracked in git: 18,110 of 18,188 changed files; disables VS Code Git features", "fix": ".gitignore + git rm -r --cached langchain"},
+    {"severity": "high", "item": "requirement.txt cannot install the app"},
+    {"severity": "medium", "item": "transcript_id = sha256(FILENAME)[:16] at Transcript_RAG_backend.py:141, so two different files with the same name collide and the app serves the wrong index while showing the new filename", "fix": "hash file contents"},
+    {"severity": "medium", "item": "retrieve node embeds only state['messages'][-1] (line 235), so follow-up questions retrieve on pronouns", "fix": "condense-question step before retrieval"},
+    {"severity": "medium", "item": "character-based chunking against a 256-token encoder truncates silently"},
+    {"severity": "medium", "item": "shared module-level sqlite3 connection with check_same_thread=False (line 31) is a concurrency risk under Streamlit's thread-per-session"},
+    {"severity": "low", "item": "Chroma imported from langchain_community is deprecated in favour of the langchain-chroma package"}
+  ],
+
+  "resume": {
+    "title": "Retrieval-Augmented Generation: From-Scratch and Framework Implementations, Benchmarked",
+    "dates": "Aug 2026 - Present",
+    "rejected_title": "Retrieval-Augmented Generation: From-Scratch Implementation and Deployed Document Assistant",
+    "why_rejected": "'Deployed' is false: no Dockerfile, no host config, no public URL, unusable requirements file. The app runs under `streamlit run` on localhost.",
+    "bullets": [
+      "Implemented a RAG retrieval pipeline in NumPy around a MiniLM-384d encoder - overlapping character chunking, unit-normalised embeddings, dot-product cosine search over an (N x 384) matrix, cited context assembly - with no retrieval framework.",
+      "Built a transcript QA assistant on LangChain/LangGraph/Streamlit (Chroma, Groq gpt-oss-120b): two-node retrieve->generate graph, SQLite-checkpointed resumable chat threads, txt/pdf/srt/vtt ingestion, map-reduce summarisation under a token-rate cap.",
+      "Benchmarked both on a 35-question span-labelled gold set: hit@4 0.86 vs 0.83 at 8-10 ms retrieval, with a chunk-size ablation isolating chunking - not the framework - as the dominant factor, lifting hit@4 to 0.89 and hit@10 to 1.00."
+    ],
+    "role_emphasis": {
+      "Capital One (Business Analysis)": "lead with bullet 3: gold set design, confound found, ablation run, effect sizes reported against sample-size caveats",
+      "Mastercard (Data Scientist II)": "lead with bullet 3 then 1: evaluation design and the explicit statement that one-question differences at n=35 are noise",
+      "EXL (AI Engineer)": "lead with bullet 2 then 3: LangGraph state and checkpointing, persistence tiers, rate-limit handling, streaming"
+    },
+    "banned_words": {
+      "deployed": "use 'served locally'",
+      "agent/agentic": "use 'two-node graph' or 'pipeline'; the LLM never influences control flow",
+      "grounded (unqualified)": "use 'context-constrained by prompt'; there is no threshold, no citation rendering, no faithfulness test",
+      "from-scratch embeddings": "the encoder is pretrained MiniLM; the chunking, index and retrieval are hand-written"
+    }
+  },
+
+  "interview_prep": {
+    "full_list": "eval/rag_project_audit_v2.tex sections 6 and 7 (10 questions on the framework app in v1, 5 new ones on the comparison in v2)",
+    "hardest_five": [
+      {"q": "Your NumPy version beat the framework. Why keep the framework one?", "a": "The win was a chunking artefact (800/150 vs 1000/200). Holding chunk size fixed, the gap reverses or vanishes; at 800/150 the framework pipeline is best measured (hit@4 0.886, hit@10 1.000). The framework buys capability - PDF/subtitle parsing, persistence, checkpointed threads - not retrieval quality at this scale."},
+      {"q": "Is 0.886 vs 0.857 a real difference?", "a": "No. One question is 2.9 points at n=35, so that is a single question, inside noise. Only the chunk-size effects (3-5 questions) are defensible."},
+      {"q": "Why is your graph not an agent?", "a": "Two nodes, three unconditional edges, no tool binding, no conditional routing. The LLM emits text and never influences control flow. If I needed agency the first addition would be a retrieval-grading node with a conditional edge back to query rewriting - the CRAG pattern."},
+      {"q": "What distance metric does your vector store use?", "a": "Chroma's default l2, not cosine - I set no collection_metadata. Ranking is unaffected because MiniLM output is unit-normalised, so ||a-b||^2 = 2-2cos(theta) is monotonic in cosine. Verified empirically: exact cosine and Chroma return identical rankings on all 35 questions."},
+      {"q": "Chunks are 1000 characters, the encoder takes 256 tokens. Walk me through that.", "a": "Measured: mean 235 tokens, max 263, 4 of 65 chunks truncated - negligible here, but only because timestamped transcript text has a high chars-per-token ratio. On dense prose the tails would be dropped silently. The correct fix is splitting on the tokeniser, not on characters."}
+    ]
+  },
+
+  "next_actions_ranked": [
+    {"action": "Rotate the five API keys and untrack .env", "effort": "15 min", "status": "NOT DONE as of 2026-09-24"},
+    {"action": "Change the app's splitter from 1000/200 to 800/150", "effort": "1 line", "payoff": "measured +5.7 points hit@4 and hit@10 1.000 on this corpus", "status": "not done"},
+    {"action": "Surface retrieval scores and numbered citations in the Streamlit UI (port what rag_annotated.py already does)", "payoff": "makes 'grounded' defensible"},
+    {"action": "Untrack langchain/ venv and write a real requirements.txt"},
+    {"action": "Add a retrieval-grading node with a conditional edge", "payoff": "makes the graph genuinely branch"},
+    {"action": "Measure generation: faithfulness, refusal on unanswerable questions, end-to-end latency", "blocked_by": "API keys must be rotated first"},
+    {"action": "Deploy on Hugging Face Spaces (more RAM than Streamlit Cloud for torch; purchasable persistent storage for Chroma + checkpoint DBs)", "payoff": "only then does 'deployed' belong on the resume"}
+  ],
+
+  "working_agreements": [
+    "Be strict and cite file:line; the user is preparing to be questioned on every word in interviews.",
+    "Distinguish measured from estimated, and say plainly when something was not measured.",
+    "State sample-size caveats rather than letting a number imply more than it supports.",
+    "Deliverables are LaTeX (.tex) files the user compiles with pdflatex; validate escaping and table column counts since no TeX toolchain is installed on this server."
+  ]
+}

@@ -1,0 +1,834 @@
+% =====================================================================
+%  Resume bullet audit: LangChain / LangGraph transcript RAG assistant
+%  Compile:  pdflatex rag_project_audit.tex   (run twice for the ToC)
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage[hidelinks]{hyperref}
+\usepackage{titlesec}
+
+\definecolor{supported}{RGB}{0,120,60}
+\definecolor{partial}{RGB}{190,120,0}
+\definecolor{unsupported}{RGB}{180,30,30}
+\definecolor{codebg}{RGB}{245,245,245}
+
+\newcommand{\SUP}{\textcolor{supported}{\textbf{SUPPORTED}}}
+\newcommand{\PART}{\textcolor{partial}{\textbf{PARTIALLY SUPPORTED}}}
+\newcommand{\NOT}{\textcolor{unsupported}{\textbf{NOT SUPPORTED}}}
+\newcommand{\UNV}{\textcolor{partial}{\textbf{NOT VERIFIABLE HERE}}}
+
+\lstdefinestyle{code}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{codebg},
+  breaklines=true,
+  frame=single,
+  framesep=4pt,
+  rulecolor=\color{gray!40},
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  xleftmargin=0pt,
+}
+\lstset{style=code}
+
+\titleformat{\section}{\large\bfseries}{\thesection}{0.7em}{}
+\setlist{itemsep=2pt,parsep=0pt,topsep=3pt}
+
+\title{\textbf{Resume Bullet Audit and Evaluation Report}\\[2pt]
+\large LangChain / LangGraph Transcript RAG Assistant}
+\author{Parikshit M. \quad (M.Tech Research, CDS, IISc Bengaluru)}
+\date{22 September 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+This document audits the resume bullets for the project \emph{``Retrieval-Augmented
+Generation: From-Scratch Implementation and Deployed Document Assistant''} against
+the code that actually exists in the repository
+\texttt{DL/Lang\_Chain/Lang\_Chain}. Every factual claim below is tied to a file and
+line number. Section~\ref{sec:eval} reports retrieval metrics measured by running a
+purpose-built evaluation harness on the transcript corpus that this pipeline has
+genuinely indexed. Two words on the resume --- \emph{deployed} and \emph{agent} ---
+do not survive the audit and are addressed explicitly in
+Sections~\ref{sec:deployed} and \ref{sec:agent}.
+\end{abstract}
+
+\tableofcontents
+\vspace{1em}
+
+% =====================================================================
+\section{Scope and method}
+% =====================================================================
+
+\paragraph{What was audited.} The two RAG applications in the repository:
+\begin{itemize}
+  \item \texttt{RAG\_Langgraph/} --- earlier version, in-memory vector store, in-memory checkpointer.
+  \item \texttt{Transcript\_RAG\_With\_DB/} --- current version, persistent Chroma
+        store plus SQLite checkpointing. \textbf{This is the version the resume
+        should describe}; all line references below are to this version unless
+        stated otherwise.
+\end{itemize}
+
+\paragraph{What could not be audited.} The from-scratch NumPy implementation
+referenced in bullet~1 is not present in this repository. Claims about it are
+marked \UNV{} rather than unsupported. Section~\ref{sec:eval} ships a harness
+written so the \emph{identical} question set and metrics can be run against that
+implementation with one command.
+
+\paragraph{What was measured versus estimated.} Retrieval metrics and retrieval
+latency in Section~\ref{sec:eval} were measured by execution on the real indexed
+corpus. End-to-end latency and answer faithfulness were \emph{not} measured,
+because they require live Groq API calls; the API keys in the repository's
+\texttt{.env} are exposed (see Section~\ref{sec:defects}) and must be rotated
+before any further calls are made. The harness supports those measurements once
+new keys are in place.
+
+% =====================================================================
+\section{Factual audit of the code}
+% =====================================================================
+
+\subsection{Models, store, and chunking}
+
+\begin{longtable}{@{}p{3.6cm}p{7.3cm}p{4.6cm}@{}}
+\toprule
+\textbf{Question} & \textbf{Answer from the code} & \textbf{Evidence} \\
+\midrule
+\endhead
+Embedding model &
+\texttt{all-MiniLM-L6-v2} via \texttt{HuggingFaceEmbeddings}
+(sentence-transformers). \textbf{384 dimensions}, max sequence length
+\textbf{256 tokens}, outputs are L2-normalised (the model ships a
+\texttt{Normalize} module). Runs locally on CPU/GPU; no API call. &
+\texttt{Transcript\_RAG\_backend.py:22}; dimension confirmed against the live
+Chroma database (\texttt{collections.dimension = 384}). \\
+\addlinespace
+Chat LLM &
+\texttt{openai/gpt-oss-120b} served by \textbf{Groq}, i.e.\ a remote API, not
+local, and not OpenAI's own service. The model is OpenAI's open-weight release
+hosted on Groq's inference platform. &
+\texttt{Transcript\_RAG\_backend.py:21}\newline
+\texttt{llm = ChatGroq(model="openai/gpt-oss-120b")} \\
+\addlinespace
+Vector store &
+\textbf{Chroma} (not FAISS). Persisted to disk at
+\texttt{Transcript\_RAG\_With\_DB/storage/chroma\_store}, one collection per
+transcript. The earlier \texttt{RAG\_Langgraph} version used an ephemeral
+in-memory Chroma. &
+\texttt{Transcript\_RAG\_backend.py:28,184--191};\newline
+in-memory variant at \texttt{RAG\_Langgraph/rag\_backend.py:58} \\
+\addlinespace
+Similarity metric &
+Chroma's default \texttt{l2} space. Because MiniLM vectors are unit-normalised,
+L2 ranking is order-equivalent to cosine ranking
+($\lVert a-b\rVert^2 = 2-2\cos\theta$). Retrieval is approximate (HNSW), though
+at 65 vectors it is effectively exact. &
+No \texttt{collection\_metadata} rows set in
+\texttt{chroma.sqlite3}, so the default applies; confirmed empirically in
+Section~\ref{sec:eval}, where Chroma and exact cosine search return identical
+rankings on all 35 questions. \\
+\addlinespace
+Chunking (\texttt{.txt}, \texttt{.pdf}) &
+\texttt{RecursiveCharacterTextSplitter}, \textbf{chunk\_size = 1000 characters,
+chunk\_overlap = 200 characters}. &
+\texttt{Transcript\_RAG\_Loader.py:8} \\
+\addlinespace
+Chunking (\texttt{.srt}, \texttt{.vtt}) &
+A \textbf{different, hand-written} path: a regex extracts timestamped cues, then
+consecutive cues are accumulated until $\geq 1000$ characters. \textbf{No
+overlap}, and each chunk carries the timestamp of its first cue in metadata. &
+\texttt{Transcript\_RAG\_Loader.py:12--55} \\
+\addlinespace
+Retrieval depth &
+\texttt{k = 4}, fixed, no re-ranking, no MMR, no score threshold. &
+\texttt{Transcript\_RAG\_backend.py:231} \\
+\addlinespace
+Upload formats &
+\texttt{.txt}, \texttt{.pdf}, \texttt{.srt}, \texttt{.vtt} --- four formats, all
+genuinely handled. \texttt{.csv} and \texttt{.docx} are \emph{not} supported by
+this app. &
+\texttt{Transcript\_RAG\_Frontend.py:96--99};\newline
+\texttt{Transcript\_RAG\_Loader.py:72--95} \\
+\bottomrule
+\end{longtable}
+
+\paragraph{A chunking detail worth knowing before an interview.}
+The chunk size (1000 characters) sits close to the embedding model's hard limit
+of 256 tokens. Measured on the indexed corpus: mean 235 tokens per chunk, maximum
+263, and \textbf{4 of 65 chunks (6\%) exceed 256 tokens and are silently
+truncated} before embedding. On this transcript the loss is trivial (about 2
+tokens each), but on denser prose --- a contract or a paper, where characters per
+token is lower --- a 1000-character chunk would routinely overflow and the tail of
+every chunk would never be embedded. This is a real, defensible observation about
+your own system, and naming it first is much stronger than being shown it.
+
+\subsection{LangGraph topology: every node and edge}
+
+\begin{lstlisting}
+START  -->  retrieve  -->  generate  -->  END
+\end{lstlisting}
+
+\begin{itemize}
+  \item \textbf{Nodes (2):} \texttt{retrieve}, \texttt{generate}.
+        (\texttt{Transcript\_RAG\_backend.py:248--249})
+  \item \textbf{Edges (3):} \texttt{START}$\to$\texttt{retrieve},
+        \texttt{retrieve}$\to$\texttt{generate},
+        \texttt{generate}$\to$\texttt{END}.
+        (\texttt{Transcript\_RAG\_backend.py:250--252})
+  \item \textbf{Conditional routing:} none. There is no
+        \texttt{add\_conditional\_edges} call anywhere in the repository's RAG code.
+  \item \textbf{Query rewriting:} none.
+  \item \textbf{Retrieval grading / relevance filtering:} none. Whatever the
+        retriever returns is passed to the LLM verbatim.
+  \item \textbf{Retry:} none \emph{inside the graph}. There is a retry
+        (\texttt{\_invoke\_with\_backoff}, lines 95--107), but it is an ordinary
+        Python loop around a Groq call that handles \texttt{RateLimitError}. It is
+        not a graph edge and it does not re-retrieve.
+  \item \textbf{State:} \texttt{RAGState} carries \texttt{messages} (reduced by
+        \texttt{add\_messages}) and \texttt{context}. (lines 59--61)
+  \item \textbf{Persistence:} compiled with a \texttt{SqliteSaver} checkpointer,
+        so multi-turn history survives process restarts; threads are named
+        \texttt{\{transcript\_id\}::\{chat\_id\}}. (lines 31--32, 254;
+        \texttt{Transcript\_RAG\_Frontend.py:177})
+\end{itemize}
+
+\noindent
+\textbf{Verdict: it is a fixed \texttt{retrieve}$\to$\texttt{generate} chain.}
+What LangGraph is genuinely buying here is the checkpointer and
+node-filtered token streaming --- not branching.
+
+\subsection{Is the answer grounded?}
+
+Yes, by prompt instruction only. The exact constraint, at
+\texttt{Transcript\_RAG\_backend.py:49--56}:
+
+\begin{lstlisting}
+RAG_PROMPT = ChatPromptTemplate.from_messages([
+    ("system",
+     "You are a helpful assistant answering questions about a meeting/video transcript. "
+     "Use ONLY the transcript excerpts below to answer. If the answer isn't in the "
+     "excerpts, say you don't know based on the transcript.\n\n"
+     "Transcript excerpts:\n{context}"),
+    ("placeholder", "{messages}"),
+])
+\end{lstlisting}
+
+\noindent What is \emph{not} there:
+\begin{itemize}
+  \item \textbf{No low-score fallback.} Retrieval has no distance threshold; four
+        chunks are always returned and always injected, however irrelevant.
+        (line 231)
+  \item \textbf{No source display in the UI.} Each excerpt is prefixed with its
+        timestamp or filename \emph{inside the prompt}
+        (\texttt{Transcript\_RAG\_backend.py:239--242}), so the model \emph{may}
+        cite it in prose, but the Streamlit interface renders only the answer
+        text. There is no citation panel and no retrieved-chunk display.
+        (\texttt{Transcript\_RAG\_Frontend.py:183--193})
+  \item \textbf{No faithfulness measurement.} Nothing verifies that the model
+        obeyed the instruction.
+\end{itemize}
+
+\noindent
+Accurate phrasing for the resume: answers are \emph{context-constrained by
+prompt}, with timestamp provenance passed to the model. They are not
+\emph{citation-verified}.
+
+\subsection{Deployment artefacts}
+
+\begin{longtable}{@{}p{5cm}p{10.5cm}@{}}
+\toprule
+\textbf{Artefact} & \textbf{Status} \\
+\midrule
+\endhead
+Dockerfile & \textbf{Absent.} No Dockerfile anywhere in the repository. \\
+\texttt{requirements.txt} & \textbf{Present but stale and wrong.} The file is named
+\texttt{requirement.txt} (singular) and \textbf{omits every dependency this app
+actually needs}: \texttt{streamlit}, \texttt{langgraph},
+\texttt{langchain-groq}, \texttt{chromadb}, \texttt{sentence-transformers},
+\texttt{langgraph-checkpoint-sqlite}. Nothing is version-pinned. The app cannot be
+installed from it. \\
+Host configuration & \textbf{Absent.} No \texttt{.streamlit/config.toml}, no
+\texttt{Procfile}, no \texttt{space.yaml}, no CI workflow. \\
+Secrets handling & \texttt{load\_dotenv()} reading a local \texttt{.env}
+(\texttt{Transcript\_RAG\_backend.py:17,19}). The \texttt{.env} file is
+\textbf{committed to git} and contains five live API keys. See
+Section~\ref{sec:defects}. \\
+Public URL & \textbf{None.} The app runs only via \texttt{streamlit run} on
+localhost. \\
+\bottomrule
+\end{longtable}
+
+% =====================================================================
+\section{Claim-by-claim verdicts}
+% =====================================================================
+
+\subsection{Bullet 1 --- from-scratch NumPy implementation}
+
+\begin{quote}\itshape
+Built a Retrieval-Augmented Generation (RAG) pipeline from scratch in NumPy,
+implementing document chunking, embedding, vector similarity search and context
+assembly directly, to establish the underlying mechanics without framework
+abstraction.
+\end{quote}
+
+\begin{longtable}{@{}p{7.2cm}p{3.2cm}p{5cm}@{}}
+\toprule
+\textbf{Claim} & \textbf{Verdict} & \textbf{Note} \\
+\midrule
+\endhead
+Pipeline built from scratch in NumPy & \UNV & Code is outside this repository. \\
+Chunking implemented directly & \UNV & --- \\
+Embedding implemented directly & \UNV & Clarify for yourself whether you wrote the
+\emph{embedding model} or called a pretrained encoder and wrote the surrounding
+pipeline. The second is normal and defensible; the first is a much larger claim.
+An interviewer will ask. \\
+Vector similarity search implemented directly & \UNV & --- \\
+Context assembly implemented directly & \UNV & --- \\
+\bottomrule
+\end{longtable}
+
+\noindent
+\textbf{Action required:} this bullet is unverifiable from the repository under
+review. Before the interview, put that code in a repository you can show, and run
+the harness in Section~\ref{sec:eval} against it so bullet~3 becomes real.
+
+\subsection{Bullet 2 --- the LangChain / LangGraph assistant}
+
+\begin{quote}\itshape
+Developing a working document assistant using LangChain and LangGraph with a
+Streamlit chat interface served locally, supporting document upload, semantic
+retrieval through an embedding model, and grounded answer generation through a
+chat LLM.
+\end{quote}
+
+\begin{longtable}{@{}p{6.4cm}p{3.4cm}p{5.6cm}@{}}
+\toprule
+\textbf{Claim} & \textbf{Verdict} & \textbf{Evidence} \\
+\midrule
+\endhead
+Uses LangChain & \SUP & \texttt{ChatGroq}, \texttt{HuggingFaceEmbeddings},
+\texttt{Chroma}, \texttt{ChatPromptTemplate},
+\texttt{RecursiveCharacterTextSplitter}, \texttt{PyPDFLoader}
+(\texttt{Transcript\_RAG\_backend.py:8--13}). \\
+\addlinespace
+Uses LangGraph & \SUP & \texttt{StateGraph} compiled with a checkpointer
+(\texttt{Transcript\_RAG\_backend.py:247--254}). \\
+\addlinespace
+Streamlit chat interface & \SUP & \texttt{st.chat\_input},
+\texttt{st.chat\_message}, \texttt{st.write\_stream}
+(\texttt{Transcript\_RAG\_Frontend.py:171--193}). \\
+\addlinespace
+Served locally & \SUP & Accurate, and the honest word. See
+Section~\ref{sec:deployed}. \\
+\addlinespace
+Document upload & \SUP & \texttt{st.file\_uploader} for four formats
+(\texttt{Transcript\_RAG\_Frontend.py:96--99}). \\
+\addlinespace
+Semantic retrieval through an embedding model & \SUP & MiniLM embeddings +
+Chroma vector search, $k=4$ (\texttt{Transcript\_RAG\_backend.py:22,231}). \\
+\addlinespace
+Grounded answer generation & \PART & The prompt constrains the model to the
+excerpts (lines 49--56), but there is no retrieval threshold, no citation
+rendering, and no faithfulness evaluation. ``Grounded'' overstates a
+prompt-level constraint. \\
+\addlinespace
+``Document assistant'' & \PART & The system prompt is transcript-specific
+(``a meeting/video transcript''), the \texttt{.srt}/\texttt{.vtt} path is
+purpose-built, and the app auto-generates a meeting summary with action items.
+It is a \emph{transcript} assistant. Calling it generic undersells the
+specialisation and invites a question you will lose. \\
+\bottomrule
+\end{longtable}
+
+\noindent
+\textbf{Undersold, and worth adding:} the bullet omits your three strongest pieces
+of engineering --- SQLite-checkpointed multi-turn memory with resumable named
+threads (lines 31--32, 210--226), persistent per-transcript Chroma collections
+that avoid re-embedding on re-upload (lines 174--200), and a map-reduce
+summarisation path with exponential backoff built specifically to stay under
+Groq's tokens-per-minute cap (lines 85--132).
+
+\subsection{Bullet 3 --- the comparison}
+
+\begin{quote}\itshape
+Comparing the two implementations on retrieval quality, latency and engineering
+effort, and documenting where framework abstractions add value and where they
+obscure failure modes.
+\end{quote}
+
+\begin{longtable}{@{}p{6.4cm}p{3.4cm}p{5.6cm}@{}}
+\toprule
+\textbf{Claim} & \textbf{Verdict} & \textbf{Evidence} \\
+\midrule
+\endhead
+Comparing on retrieval quality & \NOT{} (before this report) & No evaluation set,
+no metric code, and no results existed anywhere in the repository. \\
+\addlinespace
+Comparing on latency & \NOT{} (before this report) & No timing instrumentation
+existed. \\
+\addlinespace
+Comparing on engineering effort & \PART & Defensible by line count
+(437 non-blank, non-comment lines across three files) but nothing was recorded. \\
+\addlinespace
+Documenting where abstractions add value / obscure failure modes & \NOT & No such
+document existed. This report and Section~\ref{sec:eval} are the first artefact
+that substantiates it. \\
+\bottomrule
+\end{longtable}
+
+\noindent
+\textbf{Do not leave bullet 3 as written} unless you run the harness against both
+implementations. A claim to have compared systems, with no numbers when asked,
+is the worst outcome in an interview.
+
+% =====================================================================
+\section{The word ``Deployed''}\label{sec:deployed}
+% =====================================================================
+
+\textbf{Ruling: false as the code stands.} There is no Dockerfile, no host
+configuration, no usable requirements file and no public URL. The application
+runs only under \texttt{streamlit run} on your own machine. Remove the word, or
+spend the half-day it takes to make it true.
+
+\subsection{Does the model choice allow a real deployment?}
+
+\textbf{Yes --- this is the good news.} The LLM is a \emph{remote Groq API call},
+so no GPU is needed on the host; it needs only an API key and outbound network
+access. The embedding model is the constraint: \texttt{all-MiniLM-L6-v2} runs
+in-process and pulls in \texttt{torch} plus \texttt{sentence-transformers}
+(several hundred megabytes) and roughly 90\,MB of model weights at first run.
+Measured cold start for the encoder on this machine: about 35 seconds.
+
+\subsection{What it would actually take}
+
+\begin{longtable}{@{}p{0.6cm}p{6.2cm}p{8.6cm}@{}}
+\toprule
+& \textbf{Task} & \textbf{Detail} \\
+\midrule
+\endhead
+1 & Rotate all five API keys & Non-negotiable first step. The current keys are in
+git history. \\
+2 & Write a real \texttt{requirements.txt} & Must add \texttt{streamlit},
+\texttt{langgraph}, \texttt{langchain-groq}, \texttt{chromadb},
+\texttt{sentence-transformers}, \texttt{langgraph-checkpoint-sqlite},
+\texttt{pypdf}, with versions pinned. \\
+3 & Move secrets to the platform & \texttt{st.secrets["GROQ\_API\_KEY"]} on
+Streamlit Community Cloud, or repository secrets on Hugging Face Spaces, instead
+of \texttt{.env}. \\
+4 & Solve persistence & \textbf{This is the real obstacle.} Both platforms have
+ephemeral filesystems: on redeploy or restart, \texttt{storage/chroma\_store} and
+\texttt{chat\_history.db} are wiped, and the ``resume a previous transcript''
+feature silently stops working. Options: buy Hugging Face Spaces persistent
+storage; or move Chroma to a hosted vector database and the checkpointer to
+Postgres (\texttt{langgraph-checkpoint-postgres}). \\
+5 & Fix the shared SQLite connection & One module-level connection with
+\texttt{check\_same\_thread=False} (line 31) is fine for one local user and a
+genuine contention risk with concurrent sessions. \\
+6 & Handle multi-user state & \texttt{thread\_id} is derived from the filename
+alone, so two visitors uploading files with the same name share a conversation
+thread and a vector collection. Add a per-session identifier. \\
+7 & Respect the cold start & Cache the encoder with
+\texttt{@st.cache\_resource} so it loads once per container, not once per
+session. \\
+\bottomrule
+\end{longtable}
+
+\noindent
+\textbf{Platform recommendation: Hugging Face Spaces.} More RAM (16\,GB on the
+free CPU tier versus roughly 1\,GB on Streamlit Community Cloud), a model cache
+that makes the MiniLM download painless, and purchasable persistent storage,
+which is the one thing this app genuinely needs. Streamlit Community Cloud will
+struggle with the \texttt{torch} footprint.
+
+% =====================================================================
+\section{The word ``Agent''}\label{sec:agent}
+% =====================================================================
+
+\textbf{Ruling: not justified. Do not use it.}
+
+An agent chooses what to do next. This graph cannot: it has two nodes joined by
+unconditional edges, and every request follows exactly the same path
+(\texttt{Transcript\_RAG\_backend.py:247--254}). There is no tool binding, no
+\texttt{add\_conditional\_edges}, no loop, no self-correction. The LLM emits text;
+it never influences control flow. The only structured decision anywhere is
+\texttt{with\_structured\_output} forcing the summary into a \texttt{TypedDict}
+(line 79), which is output formatting, not agency.
+
+\noindent
+\textbf{Defensible alternatives:} ``stateful LangGraph pipeline'',
+``checkpointed retrieve-generate graph'', or simply ``RAG pipeline''. If an
+interviewer asks whether it is agentic, the winning answer is: \emph{``No. It is a
+deterministic two-node graph. I used LangGraph for the checkpointer and streaming,
+not for routing. If I needed agency, the first thing I would add is a retrieval
+grading node with a conditional edge back to a query-rewrite node --- the CRAG
+pattern.''} That answer demonstrates you know exactly what you did and did not
+build.
+
+% =====================================================================
+\section{Measured evaluation}\label{sec:eval}
+% =====================================================================
+
+\subsection{What was built}
+
+Three files, committed under \texttt{eval/}:
+
+\begin{longtable}{@{}p{4.6cm}p{10.9cm}@{}}
+\toprule
+\textbf{File} & \textbf{Purpose} \\
+\midrule
+\endhead
+\texttt{corpus\_ai\_infra.json} & The 65 chunks of
+\texttt{ai\_infra\_transcript.txt} (61{,}315 characters), extracted from the
+Chroma collection your app actually built. The evaluation therefore runs on real
+indexed data, not a toy document. \\
+\texttt{eval\_questions.json} & 35 questions spanning the whole transcript. \\
+\texttt{evaluate\_rag.py} & The harness: pluggable retrieval backends, identical
+metrics for each. \\
+\bottomrule
+\end{longtable}
+
+\paragraph{How gold labels are assigned --- the part an interviewer will probe.}
+Ground truth is \emph{not} a hand-typed chunk index. Each question carries an
+\texttt{answer\_span}, a short string that states the answer, and every chunk
+containing that span is gold. Two consequences matter: labelling is reproducible
+and auditable, and the 200-character splitter overlap is handled correctly, since
+a fact straddling a boundary legitimately appears in two chunks and both count as
+correct. Measured: 1.17 gold chunks per question.
+
+\subsection{Results}
+
+Two backends were run on the same 35 questions over the same 65 chunks, each
+query timed three times with the minimum taken:
+
+\begin{itemize}
+  \item \textbf{chroma} --- the production path:
+        \texttt{HuggingFaceEmbeddings} + \texttt{Chroma} (HNSW), exactly as the
+        app builds it.
+  \item \textbf{brute} --- \texttt{all-MiniLM-L6-v2} embeddings with exact NumPy
+        cosine search, no framework. This is the same shape as your from-scratch
+        implementation and acts as the control.
+\end{itemize}
+
+\begin{center}
+\begin{tabular}{@{}lrrl@{}}
+\toprule
+\textbf{Metric} & \textbf{Chroma (app)} & \textbf{NumPy (exact)} & \textbf{Note} \\
+\midrule
+hit@1              & 0.486 & 0.486 & 17 of 35 \\
+hit@3              & 0.743 & 0.743 & \\
+\textbf{hit@4}     & \textbf{0.829} & \textbf{0.829} & \textbf{29 of 35 --- the app's actual $k$} \\
+hit@5              & 0.829 & 0.829 & \\
+hit@10             & 0.943 & 0.943 & 33 of 35 \\
+\midrule
+recall@4           & 0.781 & 0.781 & \\
+recall@10          & 0.929 & 0.929 & \\
+MRR                & 0.633 & 0.633 & \\
+\midrule
+Latency mean (CPU) & 9.5\,ms & 7.9\,ms & same run, same machine \\
+Latency p95 (CPU)  & 10.7\,ms & 9.3\,ms & \\
+Latency mean (GPU) & --- & 3.5\,ms & RTX 6000 Ada \\
+\midrule
+Encoder cold start & \multicolumn{2}{c}{$\approx$35\,s} & once per process \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{The two backends returned identical rankings on all 35 questions.}
+That is a result, not a coincidence, and you should be able to explain it:
+MiniLM output is unit-normalised, so Chroma's default L2 ordering is
+order-equivalent to cosine, and at 65 vectors HNSW returns the exact neighbours.
+The framework therefore buys \emph{zero} retrieval quality at this scale and costs
+about 1.6\,ms per query (roughly 20\%) in overhead. It earns its place through
+persistence, metadata filtering and the scaling behaviour that would matter at
+$10^6$ vectors --- none of which this corpus exercises. That sentence is
+exactly what bullet~3 promises to deliver.
+
+\paragraph{The one-line version for an interview.}
+\emph{``On 35 questions over a 65-chunk transcript, hit rate at $k=4$ is 0.83 and
+MRR is 0.63. Chroma and an exact NumPy search return identical rankings, so the
+vector store buys me nothing on quality at this scale and costs about 20\% in
+latency; retrieval is under 10\,ms either way, which means essentially all
+user-visible latency is the LLM call.''}
+
+\paragraph{Read the failures, not just the score.} Six questions miss at $k=4$,
+and the pattern is instructive. For three of them the retriever returns the
+\emph{adjacent} chunk --- for instance the question about throughput gains from
+splitting prefill and decode pools retrieves chunk 50 when the number is in chunk
+51. The discussion is matched correctly; the specific figure lands just over a
+boundary. That is a chunking-granularity failure, not a semantic one, and it is
+the single strongest argument for the experiment in
+Section~\ref{sec:nextsteps}.
+
+\subsection{Running the identical evaluation on the NumPy implementation}
+
+The harness takes the from-scratch pipeline as a plug-in backend. Expose either
+of these from a module:
+
+\begin{lstlisting}
+# option A
+def build_index(chunks: list[str]): ...
+def search(index, query: str, k: int) -> list[int]:   # returns chunk indices
+
+# option B
+class NumpyRAG:
+    def index(self, chunks: list[str]): ...
+    def search(self, query: str, k: int) -> list[int]: ...
+\end{lstlisting}
+
+\noindent Then run:
+
+\begin{lstlisting}
+python eval/evaluate_rag.py --backend brute                      # reference
+python eval/evaluate_rag.py --backend chroma                     # the app stack
+python eval/evaluate_rag.py --backend numpy --numpy-module numpy_rag
+python eval/evaluate_rag.py --backend brute --backend numpy --out results.json
+\end{lstlisting}
+
+\noindent
+Same corpus, same questions, same gold labels, same metrics --- which is what makes
+the comparison in bullet~3 defensible rather than rhetorical.
+
+\subsection{Engineering effort, counted}
+
+\begin{center}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\textbf{Component} & \textbf{Lines} & \textbf{Non-blank, non-comment} \\
+\midrule
+\texttt{Transcript\_RAG\_backend.py}  & 254 & 198 \\
+\texttt{Transcript\_RAG\_Frontend.py} & 195 & 160 \\
+\texttt{Transcript\_RAG\_Loader.py}   &  97 &  79 \\
+\midrule
+\textbf{Total (framework version)}    & \textbf{546} & \textbf{437} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+Record the same count for the NumPy version. Effort is only a meaningful
+comparison if both sides are measured the same way, and line count alone is a
+weak proxy --- pair it with what each version does \emph{not} have to implement
+(streaming, checkpointing, PDF parsing, persistence).
+
+% =====================================================================
+\section{Rewritten bullets}
+% =====================================================================
+
+\subsection{Project title}
+
+``Deployed'' does not hold. Options, in order of preference:
+
+\begin{enumerate}
+  \item \textbf{Retrieval-Augmented Generation: From-Scratch NumPy Implementation
+        and LangGraph Transcript Assistant} \quad --- accurate today.
+  \item \textbf{Retrieval-Augmented Generation: From-Scratch and Framework
+        Implementations, Benchmarked} \quad --- leads with the comparison, which is
+        the most distinctive thing about the project.
+  \item Keep ``Deployed'' \emph{only} if you complete the checklist in
+        Section~\ref{sec:deployed} and can give a live URL.
+\end{enumerate}
+
+\subsection{The three bullets, rewritten}
+
+Each is one line at normal resume font. Numbers are the measured ones; the bracketed
+placeholder must be filled by running the harness against your NumPy code.
+
+\paragraph{Bullet 1.}
+\begin{quote}
+Implemented a RAG pipeline from scratch in NumPy --- chunking, embedding,
+vector similarity search and context assembly --- with no retrieval framework, to
+expose the mechanics that abstractions hide.
+\end{quote}
+
+\paragraph{Bullet 2.}
+\begin{quote}
+Built a transcript question-answering assistant (LangChain, LangGraph, Streamlit;
+MiniLM-384d embeddings, persistent Chroma, Groq \texttt{gpt-oss-120b}) with a
+two-node retrieve--generate graph, SQLite-checkpointed multi-turn threads, and
+\texttt{.txt}/\texttt{.pdf}/\texttt{.srt}/\texttt{.vtt} ingestion.
+\end{quote}
+
+\paragraph{Bullet 3.}
+\begin{quote}
+Benchmarked both on a 35-question gold set over a 65-chunk corpus: identical
+hit@4 (0.83) and MRR (0.63) for Chroma and exact NumPy search, with the framework
+costing 20\% retrieval latency [NumPy version: \underline{\quad\quad}], and
+identified chunk-boundary misses as the dominant failure mode.
+\end{quote}
+
+\paragraph{If you would rather have two bullets than three,} merge 1 and 3: the
+comparison is the differentiator, and a from-scratch implementation with no
+measurement attached is a weaker claim than a measured one.
+
+% =====================================================================
+\section{Ten hard interview questions, with answers from this code}
+% =====================================================================
+
+\begin{enumerate}[leftmargin=*,itemsep=6pt]
+
+\item \textbf{Your \texttt{retrieve} node embeds \texttt{state["messages"][-1]}.
+What happens when I ask a follow-up like ``and how much memory does that one
+have?''}\\
+\emph{Answer:} Retrieval degrades, and I know it. Line 235 embeds only the latest
+message, so the pronoun is what gets searched; the conversation history reaches the
+LLM (via the \texttt{\{messages\}} placeholder, line 55) but never reaches the
+retriever. My measured hit@4 of 0.83 is a single-turn number and an upper bound on
+multi-turn performance. The standard fix is a condense-question step that rewrites
+the follow-up into a standalone query using the history before retrieval.
+
+\item \textbf{Why $k=4$? What did you lose by not choosing 10?}\\
+\emph{Answer:} It was a default I then measured. hit@4 is 0.829 and hit@10 is
+0.943, so four more of the 35 questions become answerable at $k=10$ --- at the
+cost of 2.5$\times$ the context tokens per call, which matters because Groq's free
+tier caps me at roughly 8000 tokens per minute. Given that retrieval takes 7\,ms
+and the LLM call dominates latency, $k=6$ is probably the better trade, and I have
+the harness to confirm it.
+
+\item \textbf{What distance metric does your vector store use? Are you sure?}\\
+\emph{Answer:} Chroma's default, which is L2, not cosine --- I set no
+\texttt{collection\_metadata}. It does not change the ranking, because
+\texttt{all-MiniLM-L6-v2} ships a normalisation layer, so all vectors are unit
+length and $\lVert a-b\rVert^2 = 2-2\cos\theta$ is monotonic in cosine
+similarity. I verified the vectors are unit-norm rather than assuming it. If I
+ever swapped to an unnormalised encoder, the ranking would change and I would need
+to set the space explicitly.
+
+\item \textbf{Your chunks are 1000 characters. Your embedding model takes 256
+tokens. Walk me through that.}\\
+\emph{Answer:} They are in tension, and I measured it: on my corpus the mean chunk
+is 235 tokens, the maximum 263, and 4 of 65 chunks exceed the limit and are
+silently truncated --- about two tokens each, so negligible here. But the headroom
+is thin, and it only holds because transcript text with interleaved timestamps has
+a high characters-per-token ratio. On dense prose the same setting would truncate
+most chunks, and the dropped text would be unsearchable with no error raised. The
+correct fix is to split on the tokeniser, not on characters.
+
+\item \textbf{\texttt{transcript\_id} is a SHA-256 of the \emph{filename}. What
+breaks?}\\
+\emph{Answer:} Two different files named \texttt{meeting.txt} collide. Line 141
+hashes the name only, \texttt{has\_existing\_index} then reports a hit (line 174),
+and the app serves the first file's embeddings while displaying the second file's
+name --- confidently wrong answers with no error. It should hash the file
+\emph{contents}, which also gives the deduplication the current design was aiming
+at. This is a bug I found by auditing rather than by being told.
+
+\item \textbf{Your prompt says ``use ONLY the transcript excerpts''. How do you
+know the model obeys?}\\
+\emph{Answer:} I do not, and that is the honest gap. I measure retrieval quality
+(hit@4 0.83) but not generation faithfulness. Nothing checks the answer against the
+context, the UI shows no citations, and there is no refusal test set. To close it I
+would build a small labelled set including questions the transcript cannot answer,
+and score both refusal behaviour and span attribution --- either with an LLM judge
+or by checking that cited timestamps exist in the retrieved chunks.
+
+\item \textbf{If retrieval returns four irrelevant chunks, what happens?}\\
+\emph{Answer:} The LLM is called anyway. There is no score threshold and no
+relevance filter (line 231), so the prompt instruction is the only thing standing
+between the user and a hallucination. The intended fix is exactly the piece I did
+not build: a grading node scoring each chunk, with a conditional edge to a
+query-rewrite or refuse path --- corrective RAG. That is also the honest answer to
+``why isn't this agentic''.
+
+\item \textbf{If the graph is a fixed two-node chain, why use LangGraph at all?}\\
+\emph{Answer:} For the checkpointer and streaming, not for routing. Compiling with
+\texttt{SqliteSaver} (line 254) gives me thread-scoped conversation state that
+survives a browser refresh and a process restart, keyed as
+\texttt{\{transcript\_id\}::\{chat\_id\}}, which is what lets a user resume a named
+conversation about a transcript they uploaded last week. \texttt{stream\_mode="messages"}
+with a node filter lets me stream tokens from \texttt{generate} only. I could have
+written both by hand; that is precisely the abstraction-versus-effort trade-off my
+third resume bullet is about.
+
+\item \textbf{One module-level SQLite connection with
+\texttt{check\_same\_thread=False}, and Streamlit runs a thread per session. Is
+that safe?}\\
+\emph{Answer:} It is safe for one local user, which is what it was built for, and
+it is the first thing that breaks under concurrency. The connection at line 31 is
+shared across every session thread; concurrent writes serialise at best and
+contend at worst. For a real deployment I would move the checkpointer to Postgres
+and give each browser session its own identity, since \texttt{thread\_id} currently
+derives from the filename alone.
+
+\item \textbf{Why the map-reduce summariser instead of one call?}\\
+\emph{Answer:} A hard constraint, handled deliberately. Groq's free tier caps
+\texttt{gpt-oss-120b} at roughly 8000 tokens per minute, and a full transcript in
+one prompt exceeds it. So \texttt{\_condense} (lines 115--125) summarises
+3000-character windows first and feeds the partial summaries, not the raw
+transcript, into the final structured call, with a 1.5\,s pace between calls and
+exponential backoff on \texttt{RateLimitError} (lines 95--107). It trades fidelity
+for feasibility --- detail is lost in the map step --- and on a paid tier with a
+long-context model I would summarise in one pass.
+
+\end{enumerate}
+
+% =====================================================================
+\section{Defects found during the audit}\label{sec:defects}
+% =====================================================================
+
+Listed in the order they should be fixed.
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Five live API keys are committed to git} (\texttt{.env}, present
+        in the initial commit, with a GitHub remote configured). OpenAI, Google,
+        HuggingFace, Groq and an exchange-rate key. \textbf{Rotate all five},
+        add \texttt{.env} to \texttt{.gitignore}, and
+        \texttt{git rm -{}-cached .env}. Rotation is what makes the leak harmless;
+        deleting the file does not, because the keys remain in history.
+  \item \textbf{A Python virtual environment is tracked in git} ---
+        \texttt{langchain/} accounts for 18{,}110 of the repository's 18{,}184
+        uncommitted changes and is why the editor disables Git features.
+  \item \textbf{Filename-based transcript identity} (line 141) serves the wrong
+        index on a name collision. Hash contents instead.
+  \item \textbf{\texttt{requirement.txt} cannot install the application} --- it is
+        missing Streamlit, LangGraph, Chroma, Groq and sentence-transformers, and
+        pins nothing.
+  \item \textbf{Retrieval ignores conversation history} (line 235), so follow-up
+        questions retrieve on pronouns.
+  \item \textbf{Character-based chunking against a token-limited encoder}
+        truncates 6\% of chunks on this corpus and would truncate most of them on
+        prose.
+  \item \textbf{\texttt{Chroma} imported from \texttt{langchain\_community}} is
+        deprecated in favour of the \texttt{langchain-chroma} package.
+\end{enumerate}
+
+% =====================================================================
+\section{If you have one more week}\label{sec:nextsteps}
+% =====================================================================
+
+Ranked by interview value per hour spent:
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Run the harness against the NumPy implementation.} It turns
+        bullet 3 from a claim into a result, and it is the single highest-value
+        thing left. (Half a day.)
+  \item \textbf{Fix chunking and re-measure.} Split on tokens rather than
+        characters, try 512 and 256 token chunks, and report how hit@4 moves. You
+        would then own a sentence no other candidate has: \emph{``chunk-boundary
+        misses were my dominant failure mode, so I changed the splitter and hit@4
+        went from 0.83 to $X$.''} (Half a day, and the harness already exists.)
+  \item \textbf{Add the grading node.} One conditional edge makes the graph
+        genuinely branch, and legitimises far stronger language about it.
+        (Half a day.)
+  \item \textbf{Deploy it properly on Hugging Face Spaces} and restore the word
+        ``deployed'' honestly. (Half a day, plus the persistence decision.)
+\end{enumerate}
+
+\vspace{1em}
+\noindent
+\textbf{One closing note on framing.} The most persuasive thing in this project is
+not that it works --- most candidates' projects work. It is that you can state the
+measured hit rate, name the dominant failure mode, and explain precisely which
+abstraction you took from LangGraph and why. Keep the audited vocabulary:
+\emph{served locally}, not deployed; \emph{two-node graph}, not agent;
+\emph{context-constrained}, not verified-grounded. Every one of those swaps trades
+a word you would lose on for a sentence you can win with.
+
+\end{document}

@@ -1,0 +1,5 @@
+venv supported to 3.14 so uninstalled py 3.14 and reinstall py 3.11
+install cpu pytorch
+Since you are in a virtual environment (langchain), this usually happens because the Microsoft Visual C++ Redistributable is missing or the PyTorch installation is corrupted/incomplete for Windows.
+Step 1: Install Microsoft Visual C++ Redistribut
+Installation of hf_xet

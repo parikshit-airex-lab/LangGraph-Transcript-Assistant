@@ -1,0 +1,63 @@
+# ---------------------------------------------------------------
+# Lang_Chain project dependencies
+# Built from the actual imports in every .py / .ipynb in this folder
+# (the "langchain/" Windows venv folder was excluded from the scan).
+# Python 3.13 (same as the old agentic_venv)
+# ---------------------------------------------------------------
+
+# ---- LangChain core ----
+langchain
+langchain-core
+langchain-community          # loaders, Chroma/FAISS wrappers, DuckDuckGo, Wikipedia, ShellTool
+langchain-classic            # MultiQueryRetriever, ContextualCompressionRetriever, old output parsers
+langchain-text-splitters
+langchain-experimental       # SemanticChunker
+
+# ---- LangGraph ----
+langgraph
+langgraph-checkpoint-sqlite  # SqliteSaver / AsyncSqliteSaver (Transcript RAG, chatbots)
+aiosqlite
+grandalf                     # graph.get_graph().draw_ascii()
+
+# ---- LLM providers ----
+langchain-groq               # main LLM (ChatGroq, gpt-oss-120b)
+groq                         # RateLimitError in Transcript_RAG_backend.py
+langchain-openai
+langchain-anthropic
+anthropic                    # rag_annotated.py (from-scratch pipeline)
+langchain-google-genai
+google-generativeai          # try_err.py
+langchain-nomic              # NomicEmbeddings
+
+# ---- Embeddings (pulls in torch + transformers) ----
+langchain-huggingface
+sentence-transformers        # all-MiniLM-L6-v2
+
+# ---- Vector stores ----
+chromadb
+faiss-cpu
+
+# ---- Document loaders / tools ----
+pypdf                        # PyPDFLoader
+beautifulsoup4               # WebBaseLoader
+ddgs                         # DuckDuckGoSearchRun
+wikipedia                    # WikipediaRetriever
+requests
+
+# ---- MCP ----
+mcp
+langchain-mcp-adapters
+
+# ---- UI ----
+streamlit
+
+# ---- Utilities ----
+python-dotenv
+pydantic
+numpy
+scikit-learn
+langsmith
+
+# ---- Notebooks ----
+ipykernel
+ipython

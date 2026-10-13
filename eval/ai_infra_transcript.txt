@@ -1,0 +1,983 @@
+0:00
+This is an introduction to the infrastructure behind AI, which means the GPUs, the servers, and the systems
+0:07
+that sit behind every product you've ever used. If you're an S sur, a systems administrator, or a DevOps engineer,
+0:14
+this course is for you. And there's never been a better time to learn it. Companies like Amazon, Google,
+0:21
+Microsoft, and Meta together are spending over $700 billion on AI infrastructure this year alone. That is
+0:28
+four times what they were spending just 4 years ago before Chad GBD launched and it grew nearly 80% in the last year
+0:35
+alone. McKenzie expects close to 7 trillion to go into data centers by
+0:40
+2030. Now somebody has to build all of that and keep it running. And the people who can are some of the most sought
+0:47
+after engineers in the industry today. So let's start with a question. What actually happens when you type something
+0:53
+into chat GBT and press enter? Behind that answer is a solution that is unreasonably hard to build. And in this
+1:01
+course, we're going to take that solution apart piece by piece. So, we'll start with a single GPU and build it up
+1:07
+into a real model server. We'll learn how a model writes its answers one word at a time, and we'll find the hidden
+1:14
+cache that makes it fast. Then, we'll pack many users onto one GPU, and we'll split models that are too big for any
+1:21
+single card across several of them. and we'll see why ordinary load balancing falls apart the moment you run a cluster
+1:27
+of GPU servers. We'll see how LLMD fits in. LLMD is an open-source project
+1:33
+that's built by companies like Red Hat, Google, IBM, and Nvidia. And its job is to run the whole fleet of servers,
+1:40
+routing every request to the right server, moving caches around, sharing the GPUs fairly, and scaling them down
+1:47
+when traffic stops. Now, you don't need any machine learning background for this. If you can follow a request
+1:53
+through a system, you can follow everything in this course. My name is Mumshad Manabad and I'll be walking you
+1:58
+through this course. And this is the part of AI that nobody shows you.
+How ChatGPT Works?
+2:05
+So you open Chibbt, you type in a question, you hit enter and a moment later an answer comes back. Now let's
+2:11
+pull that apart starting with the name because the name is really two things stuck together. So you have the chat
+2:16
+part which is the application that's the website and the GPT part is the model which is the thing that's behind the
+2:22
+scenes that's actually reading your question and working out the answer. And GPT is only one model. There's Claude
+2:29
+from Anthropic, Gemini from Google and Llama from Meta along with plenty more. Now they have different names but the
+2:35
+same idea sits underneath all of them which is a model doing the thinking with an application wrapped around it. But
+2:42
+what is one of these models? And before we get technical, let me show you the simplest possible version of a model. So
+What a Model really is?
+2:49
+forget about AI for a second. Picture a tiny machine where you drop a number in and a different number comes out. You
+2:55
+drop in three and out comes six. You drop in 10 and out comes 20. Every time
+3:00
+it doubles whatever you gave it. That little machine is a model. It takes an input, it does some math and it hands
+3:07
+you an output. And the whole behavior the doubling comes down to one number hiding inside it which is times two. So
+3:15
+if you look closely there are really two things in that one line. First there's the formula which is the shape of the
+3:21
+calculation an [clears throat] input a multiply and an output. That part is
+3:26
+fixed and it's the structure. Second there's the number sitting inside it. The number two which is the part the
+3:33
+machine actually learned. That number has a name and we call it a weight. So you change the weight from 2 to three
+3:40
+and the very same formula now triples instead of doubles. So it's the same structure with a different number and
+3:46
+completely different behavior. Now one weight and one multiplication won't get you very far. So let's make it do
+3:52
+something real. So you want to guess the price of a house. A house has few things that you can measure like its size, how
+3:59
+many bedrooms it has, and how old it is. And each one pushes the price by some amount. So, it's still just multiply and
+4:08
+add the same math as doubling the box, but now there are several weights. So, there's 300, 50,000, 1,000, 25,000. Each
+4:17
+weight says how much that one thing matters. And where do these numbers come from? You don't make them up. You show
+4:24
+the formula. Thousands of real houses with their sizes, bedrooms, ages, and the price each one actually was sold
+4:30
+for. And it works out the weights that fit best. So that working out of the
+4:35
+weights from examples is what training is. So now the picture is clearer because a model is a formula and its
+4:42
+weights are numbers that are learned from examples. Now we just keep going. A house price
+4:48
+needed a handful of weights. But understanding a sentence needs far more than that because language is far more
+4:54
+tangled than just bigger houses and higher prices. So the formula grows. So you get more inputs, more
+5:00
+multiplications, and more weights. that's all stacked in layers where the output of one becomes the input of the
+5:07
+next. Now if you keep growing that and in one very particular arrangement you arrive at the shape behind every modern
+What is a Transformer?
+5:14
+language model and that shape has a name and it's called the transformer. Now don't worry about how it works inside
+5:20
+because what matters is what it is. So it's the same idea as doubling the box with inputs, multiplications, weights
+5:26
+and an output. It's just that it's enormous and wired in a specific pattern. So the transformer is the
+5:32
+formula. It's written once in code and it's broadly the same across GPT, Claude
+5:38
+and Llama. What makes each of them different isn't the formula. It's the weights. Which brings us to the
+A model is just a file on disk
+5:45
+surprising part. The formula, the transformer is only a page of code and all of the knowledge is in the weights.
+5:51
+A real model doesn't have four weights or 400 because it has billions of them. And these billions of numbers are what
+5:58
+training produced and they have to live somewhere. So they sit quiet literally as a file on a disk. It's simply a very
+6:05
+large file that's full of numbers waiting to be poured into the formula. And if you open one up, that's all
+6:11
+genuinely that you would see inside. And they come in wildly different sizes. So a small model may be 2GB in size. A
+6:18
+midsize model may be 16 GB. A large model with 70 billion parameters would
+6:23
+be 140GB. And the giants like 500 plus billion numbers would be several hundred
+6:29
+GB. To actually use one of these files, you load it off the disk into a memory and you hand it your question as input
+6:36
+and you let the formula run all those numbers over what you gave it and out comes the answer that you read on
+6:42
+screen. You load the file into memory, you fit it text, you get text back.
+6:48
+That's basically at its simplest form a model running. Now that brings us to the
+6:53
+obvious question. And so if model is just a file and running it is only a matter of loading it into memory and
+7:00
+doing some math, then why can't you just run one on your own laptop? So take one of the smaller models, the kind that
+Why you can't run it on your laptop
+7:06
+fits in your computer's memory just fine. Uh you've got a perfectly good machine sitting right in front of you.
+7:12
+So why can't you just run the thing? To see why, we need to look at the computer a little bit closer. So, think about any
+7:20
+computer you've ever used, whether it's your laptop or a server in a data center. On the inside, there are two
+7:27
+important parts that we care about. There's the CPU, the processor, and that's the part that actually does the
+7:32
+thinking, the calculations, the logic, and the work. And then there's the RAM, the memory, which is where the computer
+7:37
+keeps the data and the instructions the CPU is currently working on. Now, here's the thing I want you to notice because
+7:43
+it comes back later. These two parts sit separately. The CPU is one place and the
+7:49
+memory is in another and they are connected by a channel between them. Now if you take the smallest calculation
+7:54
+there is, you punch 6 * 7 into a calculator app and those two numbers land in the memory first. So the CPU
+8:02
+then reads them out does the multiplication and writes the result which is 42 back into the memory. So
+8:08
+every single calculation is the same round trip which means the computer and memory are always tightly paired. the
+8:16
+processor here, there's the memory there, and there's like a small road, a bus that's between these two. Now, that
+8:24
+is kind of the same way that every type of computing works. So, the CPU is a brilliant generalist. It has a handful
+8:31
+of very powerful cores. It works through complicated tasks one after the another.
+8:36
+It's extremely fast and for almost everything that you do on your computer like running your browser, your
+8:42
+applications, your operating system, that's exactly what you want. So what is a model actually doing under the hood?
+8:49
+Now at its core, running a model comes down to billions of very small multiplications. And here's the
+8:55
+important part because these multiplications don't depend on each other. They can all happen at the same
+9:01
+time in parallel. Now a CPU is really a few powerful cores one after another. So
+9:06
+when we hand it billions of independent little multiplications, it works through
+9:12
+them mostly in sequence. a few at a time, it gets every single one right and you'll be waiting a very very long time.
+9:19
+And that's our first problem. So the work is massively parallel with billions of things that could all happen at once.
+9:25
+But the CPU is built to do things in sequence. And we need a different kind of processor. And that's where the GPU
+GPU cores, VRAM, and bandwidth
+9:32
+comes in. Now the GPU is a processor that's built the exact opposite way. Instead of a handful of powerful cores,
+9:38
+it has thousands of small, simple cores, and they all do math at the same time. So, if you take a modest GPU like the
+9:45
+Nvidia T4, which has around 2,500 of these little cores, and if you put
+9:51
+some numbers on the difference, so a CPU manages roughly 10 trillion operations per second, while a GPU can get closer
+9:59
+to a,000 trillion operations per second. So it's about 100 times more math every
+10:05
+second. So the GPU solves our math problem. But uh it also creates a new one because if you remember how a
+10:12
+computer is built that we just spoke about, a processor needs memory to feed it data. And the same thing is true for
+10:18
+GPU. A GPU needs something to feed it all of this data that it needs to compute. In the case of a model, it's
+10:26
+the weights. So all those billion numbers of billions of parameters that we spoke about earlier, they need to be
+10:32
+stored somewhere and they need to be delivered to the CPU. So where do they live? If we leave them sitting on the
+10:38
+computer's regular RAM, there's a problem because the system RAM sits far
+10:44
+off the card down a narrow pipe that carries about 64 Gbps. And that's
+10:49
+roughly 50 times slower than what the core actually can eat. That was fine for
+10:54
+a CPU doing a few things at a time, but for thousands of GPU cores all demanding data at once, that far away memory
+11:01
+simply can't deliver fast enough. So the cores end up sitting idle, waiting for numbers that arrive too slowly. So how
+11:08
+do we feed these thousands of cores fast enough? The answer to that is to give
+11:14
+the GPU its own memory that's built right onto the card and sitting right next to its core. And this is called
+11:20
+VRAM. And here's where I wanted to bring back that picture from the very beginning. So on a computer, the CPU and
+11:28
+the RAM sit apart connected by a road. The GPU uses the same idea of a processor and its memory, but it packs
+11:34
+them tightly together on a single board that's right next to each other. So the data never has to travel far. And it's
+11:43
+the same pairing that you already know that's just moved kind of close together. Now the VRAMm has a much wider
+11:50
+pipe uh that's measured in terabytes a second rather than gigabytes. So now the model's weights live right beside the
+11:57
+man and the cores can be fed. But this solution comes with a catch and the cach is size. So VRAM is fast but it's small.
+12:05
+So a card like the T4 has 16 GB only. And remember the model sizes from the
+12:11
+start of the lessons that we spoke about that are large model. Some of them are with 70 billion numbers and needs around
+12:19
+140 GB of weights just to sit in the memory. So space in the VRAM is precious
+12:24
+and keep that in mind because later we'll see how GPUs tackle loading large
+12:31
+models with hundreds of GBs in size onto multiple GPUs. So with all of that,
+12:38
+there are three numbers that size every AI workload. So you have the compute which is how much math the card can do.
+12:46
+Then there's the capacity which is how much fits in that memory. And then
+12:52
+there's the bandwidth which is how fast it can read its own memory. So every
+The Three numbers that size every GPU
+12:57
+card that you're ever going to meet is described by these three numbers. And each generation adds more of all the
+13:05
+three. So those three numbers describe every car that you're ever going to meet. So here we have a list of cards
+13:12
+and a comparison between the three. So at first we have the desktop and we know
+13:17
+that typically you have anywhere from 1 to three T flops processing power on a
+13:23
+desktop. The RAM and memory is usually 32GB or 64GB and the bandwidth between
+13:29
+the memory and the compute is about 0.09 uh tbps. Now if you compare that against
+13:36
+a rack server which typically does about 5 to 10 T flops computing power and
+13:42
+usually has really high RAM the bandwidth between the RAM and the CPU is
+13:47
+around 0.5. But if you compare these to the Nvidia uh data center cards for
+13:53
+example, so A100, H100, H200 and B200, A100, the smallest of them all has about
+14:00
+312 T flops capacity or computing power and the memory has 80GB in capacity. The
+14:07
+bandwidth is around 2Tbps. The H100 and H200 are the comparatively higher level
+14:13
+of cards. They each have 990 T flops computing power. But if you look at the
+14:20
+difference is mainly in the memory. So H100 is 80 V RAM capacity and H200 has
+14:27
+141 RAM of capacity. Uh the B200's are comparatively much higher and they have
+14:34
+about 2,250 tlops computing power and has a really
+14:40
+high VRAM of about 192GB and also has higher bandwidth between the memory and
+14:46
+the compute of about 8 Tbps. Now a chip on its own does nothing at all because
+14:51
+something has to drive it. So that's something the software is called PyTorch which is the uh software that loads the
+14:57
+model onto the GPU and puts all of these cores to work. So in just few lines of code as you can see here in about six to
+15:04
+seven lines of code you're importing the torch package and then you're uh loading
+15:09
+the llama model in this case it's a llama model and then all you do is uh you're calling the gen command that
+15:16
+actually sends a request or a question to the model and it sends back a response. When you look at the generated
+15:23
+text in the response, that would be what model actually generated. So here's the super simple example model on your
+15:31
+laptop. So if you download really small models on your laptop, you can actually try this right away. Now that's just a
+PyTorch and the vLLM model server
+15:36
+script. It runs once for one person and then it's done. Real users are out on the internet, thousands of them that are
+15:42
+all at once. So you need something that's always on that's listening for requests and running the model efficiently. And that's a model server.
+15:50
+And the one that we'll keep coming back to is a VLM which is built right on top of PyTorch. It wraps the model into a
+15:57
+service with a normal web API. So now it's a real product and that raises a
+16:02
+question that we're going to pick up next. What is that server actually doing every time a request comes in.
+16:10
+Okay, so we'll now look at the model server itself. So say I want to serve a model and it's really just one command.
+16:17
+So I run the VLM serve and point it at the model and VLM then reads [clears throat] the model weights off
+16:23
+the disk and loads them into the GPU memory. That's about 16 GB to move. So
+16:28
+you'll be waiting for a minute or two. Now after that the server is up and
+16:33
+running and it stays up and it waits for requests. So how do you talk to it? You send it in normal web request the same
+16:39
+way that you would talk to any other web service. VLM speaks the exact same format that the OpenAI API uses. So any
+16:47
+tool that already talks to OpenAI, any script that you've already built that talks to OpenAI can talk to your own
+16:52
+server instead without changing a single line of code. Now let's notice what we have actually got here. So this one
+16:58
+server is holding the entire model in its GPU memory the whole time that it's running. Now, so if one server isn't
+17:05
+enough, a second one is not cheap at all because it means another full copy of the model on another expensive GPU. So a
+17:13
+model server is a heavy beast. Uh it's expensive to run on, it's slow to start, and it's costly to copy. Okay, so now
+17:20
+that we've got a real server that's answering real questions, everything that's actually matters is happening inside those few seconds. So what is the
+17:27
+model really doing in there? like between reading a prompt and handing back the output. That's what we'll see
+17:33
+next. Now, before we go any further, there's one word that you'll need and this is
+17:40
+something that you have heard a lot of times. Tokens. So, language model
+Tokens and the one-token-at-a-time loop
+17:45
+doesn't read and write whole words the way we do. Instead, it breaks it into
+17:50
+little pieces called tokens. So, a token is roughly 3/4 of a word. So sometimes
+17:56
+it's whole word and sometimes it's only part of a word. If you take a sentence like serving LLMs is not like serving
+18:02
+web apps which is eight words but it comes to about nine tokens and everything here gets counted in tokens.
+18:08
+So what a model can read, what you pay and how fast it goes and how fast it gets generated. All of these happen in
+18:15
+terms of tokens. Now the model has exactly one trick. So it's basically
+18:21
+predicting machine right which is given all the text so far it predicts the next
+18:26
+word or the next token. So then it takes that token adds it to the original text
+18:31
+and then it takes that again the output of that and then pends it to the original text and it does that again and
+18:39
+again and again until it generates the entire output that makes sense to the user. So a 100 token answer or 100 word
+18:46
+answer isn't like one big calculation. It's the model running that loop a 100 times over like one token per lap. And
+18:54
+that's exactly why the answer types itself out word by word when you watch chat GPT because you're watching each
+19:01
+lap finish. So the streaming comes as a free feature. So there's two things that
+19:06
+fall out of this and both of this we'll talk about later. The first is that these requests take a long time because
+19:12
+a normal web request is over in maybe a few milliseconds but a few hundred tokens means a few hundred laps of that
+19:19
+loop. Now the second one is a big one. It's that there are no two requests that are the same. So you're asking for say
+19:26
+capital of France is a few tokens in and maybe one or two tokens out. But if you
+19:32
+were to say summarize this 100page contract that's like tens of thousands of token. So both of these kind of hit
+19:39
+the same server through the same API but one is a thousand times more than the other. So that is one thing that we'll
+19:46
+look at uh later. So we spoke about the loop which generates one token at a time. Now let's take a deeper look at
+19:53
+what that loop does. So we'll now go into the loop and try and see the two
+19:58
+halves of that loop. So there's the initial pause half and then there's the
+20:04
+streaming half and that is what we will look at next. So what are the two halves of a loop? So
+20:12
+you paste a big chunk of text into Chad GPT and you hit enter and there's this pause initially for a second or or two
+20:19
+where nothing happens and then the answer comes out and it streams out word
+20:24
+by word steadily. So there's the pause and then there's the stream. So the pause and stream are the two halves and
+20:31
+we'll see exactly what happens in each of these. So let's start with the pause. Now before the model can write a single
+Prefill vs decode: TTFT and TPOT
+20:37
+word, it has to read everything that you give it, which is your whole prompt because it reads all of it at once. So
+20:45
+your prompt is already there in full. So there's nothing to wait on and every
+20:50
+token goes through the whole model together in one big burst. So the whole model gets loaded out of the VRM once
+20:57
+and thousands of cores fire at the same time to chew through the entire prompt in a single pass. And that pass ends by
+21:04
+producing the first token of your answer. And that's the moment the pause ends and the typing or the streaming
+21:11
+begins. So the pause comes down to one thing which is how much you gave it to read. Asking for the capital of France
+21:17
+is about say seven tokens. So that's only one tiny pass and no pause would be
+21:23
+noticed. But if you paste a 100page contract and that's like tens of thousands of tokens that's pushed
+21:29
+through at once and that single burst becomes a real weight. So this first phase has a name and it's called
+21:35
+prefill. So it's not called pause. That's just something I just came up with. But it's called prefill. That's
+21:40
+the technical term. The weight it causes has a name too. So which is the time to
+21:46
+first token. So TTFT time to first token means the time that it takes for the
+21:51
+prefill process, the initial computing process to complete. And how much time does it take to get that first token,
+21:59
+the first word of the response generated? That's TTFT or time to first token. Now let's look at the second
+22:05
+phase which is the writing the answer part the streaming part. Now this is the token by token loop that we spoke about
+22:11
+earlier. So each token is one full pass through the model. And because this face
+22:17
+has completely different bottleneck to produce each new token the GPU has to read the entire model out of its memory.
+22:23
+So writing a 200 token answer means you load the entire model out of the memory
+22:28
+200 times over. And each of those uh loads buys you exactly one token. So the
+22:34
+cores barely do any work at all in this phase. So this second phase is called decode. And the speed is limited by how
+22:41
+fast the GPU can read its own memory. So how fast the entire model loads from the
+22:47
+memory into the GPU. So why is the reading that's limiting the speed? So
+22:53
+the cores are tiny and they can't hold the entire model. So the weights live in
+22:58
+VRAM which is something we spoke about earlier and the course have to be fed from it constantly. That means for every
+23:04
+single token the entire model streams out of the VRAM into the course gets used and makes way for the next one. And
+23:10
+that stream has a speed limit. So a high-end GPU reads its own memory at about 3 TB per second which sounds
+23:19
+enormous. And this is something we discussed earlier. Different GPUs have different speed limits. 3 terabytes a
+23:26
+second against a 16GB model means the GPU can only read the whole thing about 200 times a second. So if you do a
+23:32
+simple math, you'll see that that's one read per token. So it's 200 tokens a second and that's the maximum limit. So
+23:40
+the benchmarks usually flip that number around and code the gap between one token and the next which is about 5
+23:46
+milliseconds. So that's like one token every 5 milliseconds. So that gap per
+23:52
+token is called as teapot. So the TOT stands for time per output token
+23:59
+and every serving benchmark you'll ever read is built on these two. So there's the initial pause that's the TTFT and
+24:07
+then then you have the Tapot which is the time per output token. Okay. So to
+24:13
+summarize we have seen two phases. You have the prefill phase which is when the original prompt gets processed. So
+24:19
+that's the initial pause and that is compute heavy. And then there's the decode phase which writes the answer by
+24:25
+rereading the model over and over. And that's the stream that we see and that is a memory bandwidth heavy. So those
+24:33
+are the two kind of different computing and memory requirements for the two different phases. One is a one-time
+24:40
+calculation, the other is a long steady grind against memory. And right now they're both happening on the same GPU.
+24:46
+So the same GPU takes turns to process both of these different kinds of operations.
+24:52
+So with the prefill and decode phases, every new token generated has a prefill
+The KV cache and prefix caching
+24:57
+phase that processes everything until then and then the decode phase that generates the new word. With that
+25:04
+approach, every word would have a gap before the new word is generated. So that's a fresh pause before every single
+25:10
+word and the chat would be too slow to use. But that's not what happens. And we
+25:16
+know that with chat applications like chat GBT, the words come out like really fast one after the other with no repeat
+25:21
+at stall. So how does that happen? The prefill step is the real work and it's
+25:26
+expensive because it consumes a lot of GPU power. But instead of throwing it away the moment it's done, the model
+25:33
+saves it right there in the GPU's memory. And that saved work has a name that's called KV cache. So prefill runs
+25:40
+once right at the start and saves the output in the KV cache. From then on, as the model writes the answer one token at
+25:47
+a time, it does not repeat prefill for each new token. It just reaches into the cache, reuses everything it already
+25:53
+worked out, and adds the one new token on top. So you pay for that pause only
+25:58
+once and not before every word. So now everything above covers exactly one
+26:04
+message, one question in and one answer out. So the moment your reply finishes
+26:10
+that request is done and the cache gets cleared. So what happens the moment you send a second message in the chat. The
+26:18
+model remembers nothing between messages. So your chat app resends the entire thread every single time. So your
+26:24
+first question, your first answer that you receive from the model and now your new message. This is all bundled into
+26:31
+one request. And because last time's work is already gone, the server has to reread every word of that from the very
+26:38
+beginning before it can reply. And every turn rebuilds all that work from scratch and then throws it away. So the longer
+26:44
+you talk, the longer you wait. So the cost of a conversation grows with every
+26:50
+message because it has to do the prefill for every message. So what if instead of
+26:55
+throwing that cash away the moment the request ends, you just kept it. You hang on to those saved blocks and you label
+27:02
+each one by the exact text that produced it. Now turn two arrives. The model looks at your thread and realizes it has
+27:09
+already done the work on all of it except your newest message. That's the only part it actually has to prefill.
+27:16
+Turn 10 now costs about what turn two cost. So the pause stays small no matter
+27:21
+how long the conversation gets. This idea has a name and is called prefix caching. If you go to the anthropic
+27:28
+console in the uh API console, you would see that there's something called as prompt caching. And a cacheed input
+27:35
+token only costs about tenth of what a fresh one does. So if you have prefix caching enabled, you can actually save a
+27:42
+lot of cost for input tokens. Okay? And once you're holding on to that saved work, something else falls out of it for
+27:48
+free. The saved work for any stretch of text depends only on the text before it
+27:54
+and doesn't know or care whose conversation it's coming from. So say I've built an assistant that is like a
+28:00
+central assistant in my company and every single conversation with opens with the same long block of
+28:05
+instructions. That's the same text every time. So under the hood it's the same saved work uh every time. The model does
+28:13
+that work once and reuses it for every person who talks to it. So it's really the same mechanism as your own next turn
+28:18
+to the cache. But in both cases it just looks at matching the beginning of the
+28:24
+call which is in this case the system prompt. We'll now look at how a single GPU
+Batching: many users on one GPU
+28:29
+serves many users at the same time and the one thing that limits how many users
+28:35
+it can actually serve. So if you think back to the expensive part of writing an answer, so for every single token it
+28:41
+produces, the GPU has to read the entire model out of its memory and that read is the real cost. So if the GPU already has
+28:48
+to read the whole model just to produce one token for one user, why not use that same read to produce the next token for
+28:55
+a lot of users at the same time? One read of the model gives you one token for one user or 50 tokens for 50 users
+29:03
+because it's the same single read either way. So that's the idea and it has a name and it's called batching. You pack
+29:10
+many people's requests together and run them through the GPU as one group. Each person's own answer still comes out at
+29:16
+roughly the same speed it would on its own. But look at what happens to the server as a whole once you add up
+29:23
+everyone's tokens. Its total output, the number of tokens it produces every second. What we call its throughput
+29:30
+shoots up. So you end up serving 50 people for something close to the cost of serving just one without batching.
+29:36
+You'd be pulling the entire model out of the memory for one person at a time and nobody could afford to run that hardware
+29:42
+that way. So why can't we batch like a million users with the same approach? The answer comes down to memory and
+29:49
+that's the ceiling on how far batching can go. So you remember the uh scratchbot that we talked about earlier,
+29:55
+the KV cache. So every single user sitting in that batch needs their own
+30:00
+scratch pad and it has to sit in the GPU's memory for as long as they're being served. So that memory is small to
+30:07
+begin with and most of it is already taken because it's busy holding the entire model. So the model's weights are
+30:13
+fixed. So they're always there taking their share of memory and whatever is left over is the only room you have for
+30:20
+everyone's scratch pads. So now fill that space up and that's it. because the
+30:26
+server is full and at that point new users have to wait in line or somebody else's scratch pad gets thrown out to
+30:32
+make room for them. And that's exactly why Chad GPD sometimes tells you that it's at capacity. So notice what isn't
+30:38
+the problem here. It's not the processor that runs out because there's plenty of math left in those cores uh sitting
+30:44
+idle. It's the memory that runs out and it's the memory that decides how many people one GPU can actually serve. And
+30:50
+this is also where a lot of money gets wasted in the real world. teams end up buying far more GPUs than the math can
+30:57
+actually calls for. And those expensive GPUs just sit there half idle. But
+31:02
+memory does more than decide how many people fit on a GPU. It also decides
+31:07
+whether the model fits on the GPU at all. So far, we have assumed that the whole model sits on one GPU. And for the
+31:14
+very biggest models, we know that it won't because they're just simply too large for any single GPU to hold. And
+31:21
+that's what we will look at next. Now, so far, every server we've talked
+31:26
+about holds the whole model by itself. For a lot of models, that works fine,
+31:31
+but it doesn't work for the very biggest models because some of them are too large to fit on a single GPU. Now,
+31:39
+remember the sizes that we looked at earlier in the course, like a large model came in at about 140 GBs, and the
+31:45
+giants with 500 billion parameters or more comes at several hundred GBs on disk. Now, what if the GPU holds only
+31:52
+about 80 GBs? So, it doesn't fit. What do we do now? You bring in several GPUs
+31:58
+instead. So, you take the giant, you slice it into pieces, and put one piece on each of the many GPUs. No single GPU
+32:05
+can hold the whole thing, but together they can hold the entire model. So, VLM,
+32:11
+the model server that we've set up earlier, can split a model across GPUs on its own. You point it at a giant
+32:17
+model, tell it how many GPUs it has, and it takes care of the rest. Now, before we cut the model up, let's look at
+Sharding: splitting giant models across GPUs
+32:24
+exactly what we're cutting. And let's super simplify this. So, a model is a
+32:29
+stack of layers, and each layer is a formula, which in practice is just a large sum of numbers. Your prompt enters
+32:36
+at the top and flows down through the stack one layer at a time. Each layer adds up its numbers and passes the
+32:43
+result to the layer below it until the very last one produces the token. So how do you actually split those layers
+32:49
+across GPUs? Now there are two ways to do it. The first is by layer. You hand the first whole layers over to GPU one
+32:56
+and the next ones to GPU 2. The second way works within each layer. So you take a single layers sum and split its terms.
+33:04
+So GPU 1 adds the first half and GPU 2 adds the second and the two halves
+33:09
+combine into that layer's answer. Now where you physically put those GPUs
+33:14
+decide which way you slice and it comes down to one thing the speed of the wire
+33:19
+between them. So inside a single machine the GPUs are joined by a special ultraast link called NV link far quicker
+33:26
+than any ordinary network. So the chatty method which is splitting within each layer works well there because the GPUs
+33:33
+can afford to talk to each other constantly. Now if you pack eight GPUs into one box on that fast link and they
+33:40
+serve a joint as if they were one machine then that works perfectly. Now this is how most large models run today.
+33:47
+Now if you go bigger than a single box where the GPUs are sitting in different machines and they only have the ordinary
+33:53
+network between them which is a lot slower. So across machines you switch to the light method instead. So you hand
+34:00
+out whole stretches of layers and each machine passes just one small result onto the next. So the rule then is
+34:07
+simple. So you keep the chatty talk inside a box and you keep the light talk between boxes. So this technique
+34:15
+splitting a model across GPUs has a name and that's called sharding and it solves the the fitting problem. So a giant too
+34:22
+big for one GPU now runs across a machines worth of uh GPUs or several
+34:27
+machines worth of GPUs acting as one logical server. So sharding makes it
+34:32
+possible to run a giant model but it still does not make one server serve the entire world.
+Why load balancing breaks for LLMs
+34:40
+Okay. So what happens when you have a fleet of uh these servers? So a real
+34:45
+service is never run on a single server because you want to serve the entire world. So you need a whole fleet of them
+34:52
+and each one is its own expensive GPU that's carrying its own copy of the
+34:58
+model. So how does my request get to one of these servers? Now, if you've worked in the infrastructure space before, you
+35:04
+probably already have a fix in mind that you put a load balancer in front of the fleet. And it spreads the incoming
+35:11
+request evenly across every server round and round, one to each in turn. And
+35:17
+we've balanced web traffic this way for decades. So, it feels like the obvious move here. But for serving large
+35:23
+language models, it turns out to be the wrong one for two reasons. So say I send
+35:29
+my first message and it lands on server 2 which reads my conversation and saves
+35:35
+its work in memory and that's basically the KV cache that we spoke about earlier. And a little later I send a
+35:42
+second message but the load balancer's whole job is to spread traffic evenly. So it sends the uh this one to server 5
+35:49
+instead and uh server 5 has never seen me before. So it has nothing saved and
+35:54
+it has to read my entire conversation again from scratch which means the prefield behavior that we spoke about
+36:00
+happens all over again. So a load balancer treats every server as interchangeable. But we already know
+36:07
+they're not. So it throws away saved work that was perfectly good and it does that on the most expensive hardware you
+36:14
+own. Now the second reason this has nothing to do with where your saved work lives. So a load balancer assumes that
+36:21
+every request is roughly the same size. So spreading them out evenly also spreads the load out evenly. But we know
+36:29
+that no two large language model requests are the same size. So one of them might be just a quick hello message
+36:35
+and the next one is probably a request to summarize 50 pages of text. So to the
+36:42
+load balancer, these two requests look identical because all it sees is the same address and the same kind of
+36:48
+traffic. So it might send that 50page request to a server that's already busy streaming answers to 30 other people and
+36:55
+all 30 of them slow down and that one big request takes far longer than it
+37:01
+should. Now the load balancer can't tell any of this apart because everything it would need to know is inside the servers
+37:08
+where it has no way of seeing n. So how full is each server's memory right now,
+37:14
+whose saved work is sitting where and how long is each queue. So serving large language models need a much smarter way
+37:21
+to route requests than anything that we have ever used before.
+37:27
+So why is serving models so hard? The model barely fits in memory to begin with. Every token forces the server to
+37:34
+reread the whole thing from scratch. Whatever saved work a server has done for you is stuck on that one server. And
+37:41
+memory also caps how many people that server can handle at once. And if you get the routing wrong, on top of all of
+37:47
+that, you waste your most expensive hardware, which is your GPU cycles. So
+37:52
+that same wall stopped everyone in the industry, which is why Red Hat, Google, IBM, and Nvidia decided to solve it
+LLM-D: the smart router on Kubernetes
+37:59
+together out in the open. And what they built is called LLMD. And LLMD is what
+38:06
+we're going to discuss next. So what is LLMD? At its heart, it's a smart router
+38:11
+that sits in front of your entire fleet of servers. And when a request comes in, it doesn't just throw it at whichever
+38:18
+server happens to be free. Next, it stops and thinks about where that request should go, then sends it to the
+38:25
+server that is best equipped to handle it. To make that call, it looks at three things. The saved work each server is
+38:31
+holding, how much memory it has free, and how long its queue is. So, start
+38:36
+with the first one. LLMD keeps track of which server holds which saved work. So when your next message comes in, instead
+38:43
+of scattering it across the fleet, LLMD sends it straight back to the server that already has your conversation. So
+38:49
+that server skips the reread and your reply comes back instantly. Now routing that way instead of spreading requests
+38:56
+evenly gives you around three times the throughput and a first response that is twice as fast on the same hardware. The
+39:03
+second thing LLMD does is look inside each server at details a plain load
+39:08
+balancer never checks. How full is the server's memory right now? How long is its queue? It uses that to send your
+39:15
+request to a server that genuinely has room instead of piling work into one that's already full. The third comes
+39:22
+from noticing that a request has two very different halves. So there's the prefills phase that we spoke about
+39:27
+earlier which is compute heavy and that's the onetime job of reading a prompt. And then there's the decode phase which is the slow token by token
+39:34
+job of writing the answer on one shared GPU. Those two take turns. So when someone pastes in 50 pages that one big
+39:42
+prefill makes everyone's answer wait midstream. So LLMD can split them onto
+39:48
+separate pools where one pool does nothing but prefill and the other does nothing but decode. Prefill is all
+39:54
+compute, decode is all memory. So each pool runs the hardware that fits its
+39:59
+job. For example, you could have the H100 type of GPUs for the pre-fill pole
+40:04
+and the H200 that has higher memory for the decode GPUs. And when a prefill
+40:09
+server finishes reading a prompt, it hands the saved work across a fast link to a decode server, which streams the
+40:16
+response. So that's up to 70% more tokens per second on the same hardware.
+40:22
+Now, the best part is that LLMD runs on top of something you're almost certainly using. It's the platform you've built
+40:28
+applications on all decade. It's the platform that 60% of organizations hosting Genai used to manage inference
+40:35
+workloads. It's a platform that your ops team already runs and it is the platform
+40:40
+that is now becoming the de facto standard for AI inference. And that platform is none other than Kubernetes.
+40:48
+Now, one of the recent CNCF blogs named the future of AI is communitydriven and open mentions that 66% of organizations
+40:55
+hosting generative AI use it to manage some or all of their inference workloads. So, if you ask teams running
+41:01
+generative AI in production what they run it on, about two out of three say Kubernetes and LLDD sits right on top of
+41:10
+it. So, if you actually wanted to run this yourself, where would you start? One of
+41:15
+the challenge teams face starting their LLMD implementation is how to tune it. So everything we have talked about has a
+LLM-D Well Lit Paths
+41:22
+real tunable knob behind it. So how much the router should favor a server that
+41:28
+already holds your saved work over one that's simply less busy? Whether you split the servers that read prompts from
+41:34
+one the ones that write answers. That's the prefill versus decode split. And how many of each do you run? how many GPUs
+41:42
+one copy of the model spans when it's too big for a single machine. How many requests each server batches before it
+41:47
+starts falling behind and every one of these moves your speed and your cost. And the right answer depends on your
+41:54
+model, your hardware and your traffic. So tune them all by hand and you could
+41:59
+just spend weeks at it and still get several of them wrong. So LLMD hands you what it calls the welllit paths. So
+42:06
+these are readymade recipes where every knob is already set and each one measured on real hardware. So there's a
+42:14
+whole many of these paths by now, but let's look at the three that carry almost the whole uh story. And you
+42:20
+already know the idea behind each one. So the first one is the optimized baseline. So that's one pool of plain
+42:26
+identical servers with cacheway routing switched on and nothing else changed. The second path splits the work in two.
+42:33
+One pool of servers reads prompts. This is your prefill pool and another writes answer. So these are the decode pool and
+42:40
+the saved workflows between them. So you size each pool for your own traffic which makes it the path for long heavy
+42:47
+prompts. The third spreads a single model across a group of GPUs that act as one server which is what the giants
+42:54
+need. The router stays exactly the same across all three and the only thing that changes is the shape of the fleet behind
+43:01
+it. So most people start with the first path because it's the smallest change you can make and the biggest payoff.
+Running LLM-D on Kubernetes
+43:10
+Let's dive into the details. Now to set it all up takes two commands. So there's a Helm install router command that
+43:16
+installs the LLMD router itself and sets up the VLM servers. And you have the
+43:23
+Helm install model command that installs the model itself. So let's try to understand what they build and how do
+43:29
+you use it. So we start with what you already have which is a Kubernetes cluster with some worker nodes and right
+43:36
+now nothing is running on any of them. So first come the model servers and every one of them is a VLM instance. So
+43:43
+this is the same server that we set up at the start. So on Kubernetes each VLM
+43:49
+instance runs as a pod landing on whichever node has room for it and a group of identical pods we know is
+43:55
+called a deployment. So that's your prefill pool and then you have your decode pool which is a few different
+44:02
+pods on a few different servers. Next out front comes a gateway which is kind
+44:07
+of the same gateway that you would put in front of any web service and it gives you one address for the whole fleet and
+44:14
+right behind it sits the LLMD scheduleuler which is the small brain holding the cache aware and the load
+44:20
+aware logic and the gateway takes the request and the scheduleuler picks the pod. So this is a very high level
+44:26
+overview of uh the architecture. Later in the full course we will dive more
+44:31
+deeper into what are the different subcomponents of these. Now what happens
+44:36
+to the giant models the giant large language models. So say a model is too big for a single machine. It has to span
+44:42
+several of them. So Kubernetes needs a way to treat that whole group of pods as one unit. So if you already know
+44:48
+Kubernetes, you're probably already aware of stateful sets because that's the first thing that came to my mind uh
+44:53
+when I thought how you would deploy a model. Now does LLMD use stateful sets
+Stateful Sets
+44:58
+here? So a stateful set gives each part a stable name and starts them in a fixed
+45:03
+order like 0 1 2 3 etc. And this is especially useful for say databases like
+45:10
+MySQL that needs to power up in a particular sequence but it still treats
+45:15
+every pod as its own separate replica. Now this works for databases like MySQL
+45:20
+but in case of LLMs that are split across different pods. They're not separate servers or replicas because
+45:26
+together they are one server that is simply split into different pieces. So
+45:32
+scaling should add another whole group of them and not just like one pod which would
+45:38
+just be hanging and if a single part of that if a single shot of that fails the
+45:43
+whole group has to restart together because a model missing a piece can't answer anything at all. So Kubernetes
+45:49
+built a new kind of object that can say these pods belong together and it's
+45:55
+called the leader worker set. So it's a leader pod plus its workers scaled and
+46:00
+healed as a single unit. Now every box in that architecture is a standard Kubernetes object. So how do you
+46:06
+describe it all to Kubernetes? And it comes down to the values.yamel file that you pass to help when you deploy the
+46:12
+model. Now this is where you describe the URI to the llama model. That's the location where the model file exists.
+46:19
+And then you define how many pods serve prefill and how many serve decode. And when you swap that one file with another
+46:25
+file with another values, you get a completely different fleet of servers and and pods. And when you apply them,
+46:32
+LLMD creates the prefill parts and the decode pods, puts the gateway and the scheduleuler out front and wires it all
+46:39
+together. So a minute later, you ask cluster what's running and then there it
+46:44
+is. You see a few lines of text which tells you exactly what's running in your inference system.
+Deployed in Kubernetes
+46:51
+Now once it is up, how do you keep it running? Now this is kind of the best
+46:56
+part of this because it's deployed on Kubernetes. Now every server here is just a pod. So the normal Kubernetes
+47:03
+loop looks after all of them and that's the part your ops team already trusts. So a pod crashes and Kubernetes restarts
+47:10
+it. A whole machine dies and Kubernetes moves those pods somewhere else. And because the readers and the writers are
+47:16
+separate pools, you grow each one independently. and adding decode pods when answers start backing up and when
+47:24
+you have the pre-filled parts when the prompts get heavy. So, Kubernetes keeps these servers alive and LLMD keeps them
+47:30
+smart. So, how do you actually use it? So, when LMD comes up, it hands you a single address, the inference gateway
+47:37
+and that one endpoint sits in front of your entire fleet. So, you're in front of your entire prefill pod, every decode
+47:43
+pod and and even in front of the entire shoted giant models. So you never call a
+47:50
+pod directly as you wouldn't in the case of web app either. You would instead
+47:55
+look at the URL that's given by the IP address and the URL that's for the gateway and you would route your request
+48:02
+there. So just to summarize when you send a request to our cluster now the
+48:07
+request hits the gateway the scheduleuler picked the pod that already held your saved work. A prefill pod read
+48:14
+your prompt and a decode pod wrote the answer one token at a time streaming the
+48:19
+model straight out of memory. And if the model happened to be a giant, a whole group of GPUs spread across several
+48:25
+machines did that work together as one. If you want to read up further on this, the project lives at llmd.ai.
+48:32
+That's llm-d.ai. So look it up. Now before we close, I want to talk
+48:39
+about you and about where you go from here. If you take a look at everything we just walked through, we spent this
+Recap
+48:45
+whole course on pods and deployments, on routing and load balancing, on caching, autoscaling, memory and networking. And
+48:52
+almost none of it was machine learning. It was infrastructure work from the first lesson to the last. The models may
+48:58
+be new, but the discipline is one you already have. So if you're a systems
+49:04
+administrator or an S sur or a DevOps engineer, you're closer to this world than you might think. Linux, containers,
+49:10
+Kubernetes, and monitoring are the foundation that every AI platform stands on, and they're exactly the skills teams
+49:16
+are struggling to hire for right now. So, every company racing to ship AI needs somebody who can keep the GPUs
+49:23
+busy, keep the latency down, and keep the bill under control. And that person looks a lot like you. And this is not
+49:30
+some small corner of the industry. Remember the trillions of dollars we saw pouring into data centers at the start
+49:36
+of this course? Because every one of those data centers need people to build it and run it. And that's why the World
+49:42
+Economic Forum lists AI and big data as the fastest growing skills of this decade. And while LinkedIn named AI
+49:49
+engineer the fastest growing job in the United States, now you don't need to become a data scientist and you don't
+49:55
+need to train models. You need to point the skills you already have at a new kind of workload. So keep your
+50:02
+foundation and add that EI layer on top of it. how GPUs work, model servers like
+50:07
+VLM and orchestration with LLMD, which is the exact stack we took apart in this
+50:12
+course. So, we've laid all of that out step by step as a learning path on CodeCloud. So, it starts from the
+50:18
+foundations. You can jump in whenever you're ready and it runs all the way to serving models at scale. So, you'll find
+50:23
+it at codcloud.com/arningpath/ai. The hard problems in AI are
+50:29
+infrastructure problems now and nobody is better placed to solve them than you.
+50:35
+Now it's time to try the um VLM lab. First of all, you don't need to worry if
+Try our Free Labs
+50:41
+you're not um feeling confident for the lab because this lab comes with a lot of hints and solutions. In this lab, you'll
+50:46
+get um a model server that answers one request at a time and users are waiting. And by the end of the lab, your goal
+50:53
+will be to build a real VLM server handling multiple users at once.
